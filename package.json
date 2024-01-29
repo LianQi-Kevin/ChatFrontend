@@ -16,10 +16,10 @@
   "license": "APACHE-2.0",
   "scripts": {
     "vite:dev": "vite",
-    "vite:build": "vite build",
+    "vite:build": "tsc --noEmit && vite build",
     "vite:preview": "vite preview",
     "electron:start": "electron --trace-warnings .",
-    "electron:build": "vite build && electron-builder",
+    "electron:build": "tsc --noEmit && vite build && electron-builder",
     "electron:postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -47,9 +47,14 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@types/node": "^18.0.0",
     "@vitejs/plugin-vue": "^4.5.2",
+    "@vue/runtime-dom": "^3.4.15",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
+    "sass": "^1.70.0",
+    "tree-kill": "^1.2.2",
+    "typescript": "^5.3.3",
     "unplugin-auto-import": "^0.17.3",
     "unplugin-icons": "^0.18.2",
     "unplugin-vue-components": "^0.26.0",
