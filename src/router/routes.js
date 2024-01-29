@@ -12,18 +12,9 @@ const routes = [
         }
     },
     {
-        path: '/error/:id',
-        component: () => import('@/view/notFound.vue'),
-        props: (route) => ({id: route.params.id || 404}),
-        meta: {
-            requiresAuth: false,
-            title: 'ERROR'
-        }
-    },
-    {
-        // 配置全局匹配，跳转到 404 NOT FOUND
+        // 配置全局匹配，跳转到 home
         path: '/:pathMatch(.*)*',
-        redirect: '/error/404'
+        redirect: '/home'
     }
 ];
 

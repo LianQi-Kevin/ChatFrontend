@@ -10,14 +10,27 @@
 
 ---
 
-#### Install electron & electron-builder
+### install electron && electron-builder
+
+> 详参: [添加 Electron 和 electron-builder 到现有 Vite 项目](https://blog.csdn.net/liuliu123456790/article/details/135902415)
+
+* 方法一：设置代理（已配置于[.npmrc](./.npmrc)）
 
 ```shell
-npm config set proxy=http://127.0.0.1:12345
-npm config set registry=https://registry.npmjs.org
+$env:ELECTRON_GET_USE_PROXY=1
+$env:GLOBAL_AGENT_HTTP_PROXY=http://127.0.0.1:52539
+$env:GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:52539
+```
 
-$env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
-$env:ELECTRON_CUSTOM_DIR="{{ version }}"
-$env:NODE_TLS_REJECT_UNAUTHORIZED=0
-npm install --verbose electron --save-dev
+* 方法二：设置淘宝镜像
+
+```shell
+ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
+ELECTRON_CUSTOM_DIR="{{ version }}"
+```
+
+* Install
+
+```shell
+npm install --verbose electron electron-builder --save-dev
 ```
