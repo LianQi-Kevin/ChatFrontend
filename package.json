@@ -8,7 +8,7 @@
     "name": "LianQi",
     "url": "https://lianqidev.cn"
   },
-  "description": "A sleek desktop application for creating QR codes.",
+  "description": "The conversation application with XingHuo LLM.",
   "repository": {
     "type": "git",
     "url": "https://github.com/LianQi-Kevin/QRcodeCreater"
@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "element-plus": "^2.5.1",
+    "localforage": "^1.10.0",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
   },
@@ -59,7 +60,7 @@
     "unplugin-icons": "^0.18.2",
     "unplugin-vue-components": "^0.26.0",
     "vite": "^5.0.8",
-    "vite-plugin-electron": "^0.15.6",
+    "vite-plugin-electron": "^0.28.0-beta.1",
     "vite-plugin-electron-renderer": "^0.14.5",
     "vite-plugin-inspect": "^0.8.1"
   }
