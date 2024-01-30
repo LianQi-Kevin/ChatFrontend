@@ -7,23 +7,22 @@ const routes = [
         name: 'Home',
         component: Home,    // 首页不启用lazyLoad
         meta: {
-            requiresAuth: false,    // 是否需要鉴权 ( 非必要, 默认false )
+            verifyAPIConfig: true,      // 校验API配置 ( 非必要, 默认false )
             title: 'Home'   // 页面标题 ( 非必要 )
         }
     },
     {
         path: '/config',
         name: 'Config',
-        component: () => import('@/view/Config.vue'),    // lazyLoad
+        component: () => import('@/view/Config.vue'),
         meta: {
-            requiresAuth: false,    // 是否需要鉴权 ( 非必要, 默认false )
-            title: 'Config'   // 页面标题 ( 非必要 )
+            title: 'Config'
         }
     },
     {
-        // 配置全局匹配，跳转到 home
+        // 配置全局匹配，跳转到 /
         path: '/:pathMatch(.*)*',
-        redirect: '/home'
+        redirect: '/'
     }
 ];
 

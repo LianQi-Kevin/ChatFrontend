@@ -1,6 +1,9 @@
 import { app, BrowserWindow } from 'electron';
+// import {  Menu } from 'electron';
 
 function createWindow() {
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = "true"
+    // Menu.setApplicationMenu(Menu.buildFromTemplate([])) // 清空菜单栏，win/mac/linux通用
     const win = new BrowserWindow({
         width: 800,
         height: 650,
@@ -12,11 +15,15 @@ function createWindow() {
     // You can use `process.env.VITE_DEV_SERVER_URL` when the vite command is called `serve`
     if (process.env.VITE_DEV_SERVER_URL) {
         console.log('vite dev server url:', process.env.VITE_DEV_SERVER_URL)
-        win.loadURL(process.env.VITE_DEV_SERVER_URL)
+        win.loadURL(process.env.VITE_DEV_SERVER_URL).then(() => {
+            console.debug('loadURL success')
+        })
         win.webContents.openDevTools({mode:'right'})
     } else {
         // Load your file
-        win.loadFile('dist/index.html');
+        win.loadFile('dist/index.html').then(() => {
+            console.debug('loadFile success')
+        });
     }
 }
 
