@@ -11,22 +11,12 @@ const showConfig = ref(false)
 const inputValue = ref('')
 
 const messagesList = ref([
-  { chatType: 'user', userName: 'allEN', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.' },
-  { chatType: 'user', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.'},
-  { chatType: 'user', userName: 'allEN', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.' },
-  { chatType: 'user', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.'},
-  { chatType: 'user', userName: 'allEN', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.' },
-  { chatType: 'user', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.'},
-  { chatType: 'user', userName: 'allEN', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.' },
-  { chatType: 'user', message: 'Hello, I am a bot.' },
-  { chatType: 'bot', userName: 'Bot', message: 'Hello, I am a bot.'},
+  { chatType: 'user', userName: 'allEN', message: 'Hello' },
+  {
+    chatType: 'bot',
+    userName: 'Bot',
+    message: '### hello\n\n- 1\n- 2\n- 3\n\n```python\nprint("hello")\n```\n\n[百度](https://www.baidu.com)'
+  },
 ])
 
 onBeforeMount(async () => {

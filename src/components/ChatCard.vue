@@ -1,4 +1,5 @@
 <script setup>
+import md from '@/markdown/index.js';
 import {Avatar, User} from "@element-plus/icons-vue";
 
 const props = defineProps({
@@ -17,15 +18,6 @@ const props = defineProps({
   }
 });
 
-function dynamicUserName() {
-  return props.chatType === 'user' ? props.userName : 'Bot';
-}
-
-function dynamicMessages() {
-  // todo: 使用lute渲染markdown
-  // https://github.com/88250/lute
-  return props.chatType === 'user' ? props.message : 'Bot';
-}
 </script>
 
 <template>
@@ -41,8 +33,10 @@ function dynamicMessages() {
         </el-avatar>
       </div>
       <div class="chat__messageBox">
-        <div class="chat__userName">{{ dynamicUserName() }}</div>
-        <div class="chat__message">{{ dynamicMessages() }}</div>
+        <div class="chat__userName">{{ props.chatType === 'user' ? props.userName : 'Bot' }}</div>
+        <div class="chat__message" v-if="props.chatType === 'user'">{{ props.message }}</div>
+<!--        <div class="chat__message" v-else v-html="dynamicMessages()" />-->
+        <div class="chat__message" v-else v-html="md.render(props.message)" />
       </div>
     </div>
   </div>
