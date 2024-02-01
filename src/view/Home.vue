@@ -15,7 +15,12 @@ const messagesList = ref([
   {
     chatType: 'bot',
     userName: 'Bot',
-    message: '### hello\n\n- 1\n- 2\n- 3\n\n```python\nprint("hello")\n```\n\n[百度](https://www.baidu.com)'
+    message: '```python\ndoc.sections[0].page_height = Cm(29.7)\n' +
+      'doc.sections[0].page_width = Cm(21)\n' +
+      'doc.sections[0].orientation = WD_ORIENTATION.LANDSCAPE  # 设置为纵向　\n' +
+      'wb.save(save_path if len(invoice_list) == 1 else ' +
+      'f"{os.path.splitext(save_path)[0]}_{index}' +
+      '{os.path.splitext(save_path)[1]}")\n```'
   },
 ])
 
@@ -23,10 +28,6 @@ onBeforeMount(async () => {
   apiCredentials.value = await DB.getItem("apiCredentials")
   modelName.value = `讯飞星火认知大模型 ${apiCredentials.value ? apiCredentials.value['APIVersion'] : ''}`
 });
-
-onMounted(() => {
-  // modelName.value = `讯飞星火认知大模型`
-})
 
 async function updateApiCredentials() {
   DB.getItem("apiCredentials").then((res) => {
@@ -73,18 +74,15 @@ async function updateApiCredentials() {
             placeholder="Please type here"
             show-word-limit
             maxlength="4000"
-            :autosize="{ minRows: 2, maxRows: 6 }"
+            :autosize="{ minRows: 1, maxRows: 6 }"
             type="textarea"
             v-model="inputValue"
-            size="large"
           />
           <el-button
-            size="large"
             class="submitBtn"
-            circle
           >
             <el-icon >
-              <Promotion style="transform: scale(1.5);"/>
+              <Promotion style="transform: scale(1.3);"/>
             </el-icon>
           </el-button>
         </div>
@@ -134,19 +132,6 @@ async function updateApiCredentials() {
     flex-direction: column;
     flex-grow: 1;
 
-    background: var(--el-fill-color-light);
-
-    //.header{
-    //  position: absolute;
-    //  top: 0;
-    //  height: 50px;
-    //  width: calc(100% - 260px);
-    //
-    //  background: rgba(80, 80, 80, 0.7);
-    //  -webkit-backdrop-filter: blur(10px);
-    //  backdrop-filter: blur(10px);
-    //}
-
     .conversations{
       margin-top: 25px;
 
@@ -154,6 +139,11 @@ async function updateApiCredentials() {
       flex-grow: 1;
 
       overflow-y: auto;
+      overflow-x: hidden;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
 
@@ -161,7 +151,12 @@ async function updateApiCredentials() {
       margin:  10px 15px 15px 15px;
 
       flex-grow: 0;
-      flex-basis: 110px;
+      flex-basis: 85px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
 
       .rowTools{
         display: flex;
@@ -169,6 +164,10 @@ async function updateApiCredentials() {
         justify-content: space-between;
 
         margin: 0 5px 0 5px;
+
+        min-width: 200px;
+        width: 100%;
+        max-width: 770px;
 
         .uploadBtn{
           font-size: 15px;
@@ -192,6 +191,10 @@ async function updateApiCredentials() {
 
         padding: 10px;
 
+        min-width: 200px;
+        width: 100%;
+        max-width: 770px;
+
         .inputText{
           :deep(.el-textarea__inner){
             border-radius: 10px;
@@ -203,7 +206,9 @@ async function updateApiCredentials() {
         }
 
         .submitBtn{
-          margin: 0 0 0 15px ;
+          height: 34px;
+          margin: 0 0 0 5px;
+          border-radius: 10px;
         }
       }
     }

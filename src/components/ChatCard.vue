@@ -1,5 +1,5 @@
 <script setup>
-import md from '@/markdown/index.js';
+import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import {Avatar, User} from "@element-plus/icons-vue";
 
 const props = defineProps({
@@ -18,6 +18,8 @@ const props = defineProps({
   }
 });
 
+const isDefaultUser = props.chatType === 'user' && props.userName && props.userName === 'You'
+
 </script>
 
 <template>
@@ -26,17 +28,19 @@ const props = defineProps({
       <div class="chat__avatar">
         <el-avatar size="small">
           <el-icon>
-            <User v-if="props.chatType === 'user' && props.userName && props.userName === 'You'" />
-            <template v-else-if="props.chatType === 'user'">{{ props.userName.slice(0, 2).toUpperCase() }}</template>
+            <User v-if="isDefaultUser" />
+            <template v-else-if="props.chatType === 'user'">
+              {{ props.userName.slice(0, 2).toUpperCase() }}
+            </template>
             <Avatar v-else />
           </el-icon>
         </el-avatar>
       </div>
       <div class="chat__messageBox">
-        <div class="chat__userName">{{ props.chatType === 'user' ? props.userName : 'Bot' }}</div>
-        <div class="chat__message" v-if="props.chatType === 'user'">{{ props.message }}</div>
-<!--        <div class="chat__message" v-else v-html="dynamicMessages()" />-->
-        <div class="chat__message" v-else v-html="md.render(props.message)" />
+        <div class="chat__userName">
+          {{ props.chatType === 'user' ? props.userName : 'Bot' }}
+        </div>
+        <MarkdownRenderer :content="props.message" />
       </div>
     </div>
   </div>
@@ -45,14 +49,15 @@ const props = defineProps({
 <style scoped lang="scss">
 .chatCard {
   padding: 8px 16px;
-  display: flex;
-  justify-content: center;
-  flex-direction: row;
+  margin: 0 auto;
+
+  width: 100%;
+  max-width: calc(48rem + 40px);
 
   .chat__inner {
     padding: 0 20px;
-    max-width: 750px;
     width: 100%;
+    max-width: 48rem;
     display: flex;
     flex-direction: row;
     gap: 0.75rem;
@@ -64,23 +69,21 @@ const props = defineProps({
     }
 
     .chat__messageBox {
+      width: calc(100% - 115px);
+
       display: flex;
       flex-direction: column;
-      justify-content: left;
-      word-wrap: break-word;
+
+      position: relative;
+      box-sizing: border-box;
+
 
       .chat__userName {
         font-size: 1rem;
         line-height: 1.5rem;
         font-weight: 600;
       }
-
-      .chat__message {
-        font-size: 1rem;
-        line-height: 1.5rem;
-      }
     }
   }
 }
 </style>
-
