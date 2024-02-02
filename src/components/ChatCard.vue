@@ -5,7 +5,11 @@ import {Avatar, User} from "@element-plus/icons-vue";
 const props = defineProps({
   chatType: {
     required: true,
-    type: String
+    type: String,
+    validator(value) {
+      // The value must match one of these strings
+      return ['bot', 'user'].includes(value)
+    }
   },
   userName: {
     required: false,
@@ -40,7 +44,7 @@ const isDefaultUser = props.chatType === 'user' && props.userName && props.userN
         <div class="chat__userName">
           {{ props.chatType === 'user' ? props.userName : 'Bot' }}
         </div>
-        <MarkdownRenderer :content="props.message" />
+        <MarkdownRenderer :content="props.message" :chatType="props.chatType"/>
       </div>
     </div>
   </div>
@@ -66,6 +70,9 @@ const isDefaultUser = props.chatType === 'user' && props.userName && props.userN
       display: flex;
       flex-direction: column;
       justify-content: start;
+      span{
+        font-size: var(--el-font-size-small);
+      }
     }
 
     .chat__messageBox {

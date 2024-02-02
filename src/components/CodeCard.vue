@@ -1,7 +1,7 @@
 <script setup>
-import {codeToHtml} from 'shiki/bundle/full'
-
-import {CopyDocument} from "@element-plus/icons-vue";
+import { codeToHtml } from 'shiki/bundle/full'
+import { useClipboard } from '@vueuse/core'
+import { CopyDocument } from "@element-plus/icons-vue";
 
 const props = defineProps({
   lang: {
@@ -13,29 +13,57 @@ const props = defineProps({
     required: true,
     type: String
   },
+  themes: {
+    required: false,
+    type: Object,
+    default: () => ({
+      dark: import.meta.env.VITE_SHIKI_THEME_DARK,
+      light: import.meta.env.VITE_SHIKI_THEME_LIGHT,
+    })
+  }
 })
 
 const html = ref('')
+const copyCodeBtnText = ref('Copy code')
 
 onMounted(async () => {
-  // console.debug({
-  //   'lang': props.lang,
-  //   'content': props.content,
-  // })
+  // console.debug({ 'lang': props.lang, 'content': props.content, })
 
   // noinspection JSUnresolvedReference,JSCheckFunctionSignatures
   codeToHtml(props.content, {
     lang: props.lang,
-    themes: {
-      dark: import.meta.env.VITE_SHIKI_THEME_DARK,
-      light: import.meta.env.VITE_SHIKI_THEME_LIGHT,
-    }
+    themes: props.themes
   }).then((res) => {
-    // console.debug(html)
     html.value = res
   })
 });
 
+const { text, copy, copied, isSupported } = useClipboard()
+
+function copyCode() {
+  if (isSupported) {
+    if (props.content.length === 0) {
+      ElMessage({
+        message: 'No code to copy',
+        type: 'error'
+      })
+    } else {
+      copy(props.content)
+      if(copied){
+        console.debug(`Copied to clipboard: ${text.value}`)
+        copyCodeBtnText.value = 'Copied'
+        setTimeout(() => {
+          copyCodeBtnText.value = 'Copy code'
+        }, 1000)
+      }
+    }
+  } else {
+    ElMessage({
+      message: 'Your browser does not support copying',
+      type: 'error'
+    })
+  }
+}
 
 </script>
 
@@ -45,17 +73,14 @@ onMounted(async () => {
       <el-text >
         {{ props.lang }}
       </el-text>
-      <el-button link >
-<!--        todo: 复制还没写-->
-        <el-icon style="margin-right: 2px">
+      <el-button link @click="() => {copyCode()}" :disabled="copyCodeBtnText === 'Copied'">
+        <el-icon style="margin-right: 3px">
           <CopyDocument style="transform: scale(1.1)"/>
         </el-icon>
-        Copy code
+        {{ copyCodeBtnText }}
       </el-button>
     </div>
-    <div class="codeCard__code">
-      <div v-html="html" class="codeCard__Mask"/>
-    </div>
+    <div class="codeCard__code" v-html="html" />
   </div>
 </template>
 
@@ -72,78 +97,44 @@ html.dark .shiki span {
 </style>
 
 <style scoped lang="scss">
-// todo: 代码块待调试，仍无法随页面缩放
 .codeCard {
   box-shadow: var(--el-box-shadow-lighter);
   word-wrap: break-word;
 
-  //width: auto;
-  //max-width: 100%;
-
-  overflow-x: auto;
   position: relative;
 
-  .codeCard__header {
-    border-radius: .375rem .375rem 0 0;
+  display: flex;
+  flex-direction: column;
 
+  border-radius: .375rem;
+  background-color: rgba(147,147,147,0.4);
+
+  .codeCard__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
 
-    :deep(span){
+    :deep(span) {
       font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
       'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
       font-size: 12px;
       font-weight: 400;
-      color: rgb(197, 197, 210);
+      color: var(--el-text-color);
     }
-
-
-    position: relative;
-    background-color: rgba(147,147,147,0.4);
   }
+
 
   .codeCard__code {
     :deep(pre) {
-      //max-width: 100%;
-      //width: 100%;
+      min-width: 100%;
+      width: 5vw;
+      overflow: auto;
+
       border-radius: 0 0 .375rem .375rem;
-      //overflow-y: auto;
-
-      overflow-x: auto;
-      position: relative;
-
-      direction: ltr;
-      text-align: left;
-      white-space: pre;
-      word-spacing: normal;
-      word-break: normal;
-      word-wrap: normal;
-
-
-      //white-space: nowrap;
-      display: block;
-      margin: 0;
       box-sizing: border-box;
-      //noinspection CssInvalidPropertyValue
-      text-wrap: nowrap;
-
-      code {
-        display: block;
-        width: fit-content;
-        min-width: 100%;
-
-        direction: ltr;
-        text-align: left;
-        white-space: pre;
-        word-spacing: normal;
-        word-break: normal;
-        word-wrap: normal;
-      }
+      margin: 0;
     }
   }
 }
-
-
 </style>

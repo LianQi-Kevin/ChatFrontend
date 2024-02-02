@@ -10,6 +10,15 @@
 
 ---
 
+### Todo
+
+* [ ] 完成星火大模型 WebSocket API 封装
+* [ ] 支持 i18n
+* [ ] 支持已发送修改 [MarkdownRenderer.vue](src/components/MarkdownRenderer.vue)
+* [ ] 支持历史记录
+
+---
+
 ### install electron && electron-builder
 
 > 详参: [添加 Electron 和 electron-builder 到现有 Vite 项目](https://blog.csdn.net/liuliu123456790/article/details/135902415)

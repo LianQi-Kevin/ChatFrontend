@@ -3,16 +3,35 @@
 import md from '@/tools/markdown.js'
 import "github-markdown-css/github-markdown.css";
 import CodeCard from '@/components/CodeCard.vue'
+import {useClipboard, useThrottleFn} from '@vueuse/core'
+import { CopyDocument, Edit } from "@element-plus/icons-vue";
 
 const props = defineProps({
-  content: String,
+  content: {
+    required: true,
+    type: String
+  },
+  chatType: {
+    required: false,
+    type: String,
+    default: 'bot',
+    validator(value) {
+      // The value must match one of these strings
+      return ['bot', 'user'].includes(value)
+    }
+  }
 });
 
 const codeBlocksContainer = ref(null);
 
-onMounted(async () => {
-  await nextTick(); // 确保 markdown-it 渲染的内容已经插入 DOM
+onMounted(() => {
+  // 确保 markdown-it 渲染的内容已经插入 DOM
+  nextTick(() => {
+    throttledReplaceCodeCard()
+  });
+});
 
+function replaceCodeCard() {
   const codeBlocks = codeBlocksContainer.value.querySelectorAll('pre[id="codeSpace"]');
 
   codeBlocks.forEach(block => {
@@ -30,8 +49,32 @@ onMounted(async () => {
       codeCardInstance.mount(mountNode);
     }
   });
-});
+}
 
+const throttledReplaceCodeCard = useThrottleFn(replaceCodeCard, 1000);
+
+const { text, copy, copied, isSupported } = useClipboard()
+
+function copyContent() {
+  if (isSupported) {
+    if (props.content.length === 0) {
+      ElMessage({
+        message: 'No code to copy',
+        type: 'error'
+      })
+    } else {
+      copy(props.content)
+      if(copied){
+        console.debug(`Copied to clipboard: ${text.value}`)
+      }
+    }
+  } else {
+    ElMessage({
+      message: 'Your browser does not support copying',
+      type: 'error'
+    })
+  }
+}
 </script>
 
 <template>
@@ -40,6 +83,14 @@ onMounted(async () => {
       <article class="markdown-body" ref="codeBlocksContainer">
         <div v-html="md.render(props.content)" class="markdown"/>
       </article>
+      <div class="markdown__Tools">
+        <el-button class="markdown__Copy" link @click="copyContent()">
+          <el-icon><CopyDocument /></el-icon>
+        </el-button>
+        <el-button class="markdown__Change" link v-if="false && props.chatType === 'user'">
+          <el-icon><Edit style="width: 14px; height: 14px"/></el-icon>
+        </el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -47,17 +98,13 @@ onMounted(async () => {
 <style scoped lang="scss">
 .flexBox{
   max-width: 100%;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
 
   .markdown-body {
+    width: auto;
     word-wrap: break-word;
-    white-space: pre-wrap;
-    overflow-x: auto;
-    gap: 0.75rem;
-    align-items: flex-start;
+    gap: 0.5rem;
+    align-items: start;
     min-height: 20px;
     flex-direction: column;
     display: flex;
@@ -68,10 +115,20 @@ onMounted(async () => {
     color: var(--el-text-color);
 
     .markdown {
+      width: 100%;
       max-width: none;
       word-wrap: break-word;
-      width: 100%;
     }
+  }
+  .markdown__Tools {
+    svg {
+      display: none;
+    }
+  }
+}
+.flexBox:hover, .flexBox:active {
+  svg {
+    display: block;
   }
 }
 </style>

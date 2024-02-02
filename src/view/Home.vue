@@ -11,17 +11,8 @@ const showConfig = ref(false)
 const inputValue = ref('')
 
 const messagesList = ref([
-  { chatType: 'user', userName: 'allEN', message: 'Hello' },
-  {
-    chatType: 'bot',
-    userName: 'Bot',
-    message: '```python\ndoc.sections[0].page_height = Cm(29.7)\n' +
-      'doc.sections[0].page_width = Cm(21)\n' +
-      'doc.sections[0].orientation = WD_ORIENTATION.LANDSCAPE  # 设置为纵向　\n' +
-      'wb.save(save_path if len(invoice_list) == 1 else ' +
-      'f"{os.path.splitext(save_path)[0]}_{index}' +
-      '{os.path.splitext(save_path)[1]}")\n```'
-  },
+  { chatType: 'user', userName: 'allEN', message: 'Give me some python Example' },
+  { chatType: 'bot', userName: 'Bot', message: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```'},
 ])
 
 onBeforeMount(async () => {
@@ -35,6 +26,13 @@ async function updateApiCredentials() {
     console.debug(apiCredentials.value)
   })
   showConfig.value = false
+}
+
+function submitMessage() {
+  console.debug(inputValue.value)
+  // todo: 待封装相关请求函数
+  messagesList.value.push({ chatType: 'user', userName: 'You', message: inputValue.value })
+  inputValue.value = ''
 }
 </script>
 
@@ -50,7 +48,7 @@ async function updateApiCredentials() {
       </div>
       <div class="conversations">
         <template v-for="item in messagesList">
-          <ChatCard :chat-type="item.chatType" :message="item.message" :userName="item.userName"/>
+          <ChatCard :chatType="item.chatType" :message="item.message" :userName="item.userName"/>
         </template>
       </div>
       <div class="inputArea">
@@ -61,7 +59,7 @@ async function updateApiCredentials() {
               <DocumentAdd style="transform: scale(1.2);"/>
             </el-icon>
           </el-button>
-          <el-button type="info" size="large" link class="refreshBtn">
+          <el-button type="info" size="large" link class="refreshBtn" @click="() => {messagesList = []}">
             New Chat
             <el-icon style="margin-left: 5px" >
               <Refresh style="transform: scale(1.2);"/>
@@ -69,18 +67,11 @@ async function updateApiCredentials() {
           </el-button>
         </div>
         <div class="rowInput">
-          <el-input
-            class="inputText"
-            placeholder="Please type here"
+          <el-input class="inputText" placeholder="Please type here" v-model="inputValue"
+            maxlength="4000" :autosize="{ minRows: 1, maxRows: 6 }" type="textarea"
             show-word-limit
-            maxlength="4000"
-            :autosize="{ minRows: 1, maxRows: 6 }"
-            type="textarea"
-            v-model="inputValue"
           />
-          <el-button
-            class="submitBtn"
-          >
+          <el-button class="submitBtn"  @click="submitMessage()" :disabled="!inputValue.length > 0">
             <el-icon >
               <Promotion style="transform: scale(1.3);"/>
             </el-icon>
@@ -151,7 +142,7 @@ async function updateApiCredentials() {
       margin:  10px 15px 15px 15px;
 
       flex-grow: 0;
-      flex-basis: 85px;
+      flex-basis: 80px;
 
       display: flex;
       flex-direction: column;
@@ -176,13 +167,14 @@ async function updateApiCredentials() {
         .refreshBtn{
           font-size: 15px;
         }
-        //margin: 0 15px 0 15px;
       }
 
       .rowInput{
         margin-top: 10px;
 
-        background: rgba(128, 128, 128, 0.5);
+        border: 1px solid var(--el-box-shadow);
+        box-shadow: var(--el-box-shadow);
+
         border-radius: 10px;
 
         display: flex;
@@ -202,6 +194,7 @@ async function updateApiCredentials() {
             border: none;
             font-size: 16px;
             font-weight: 400;
+            box-shadow: none;
           }
         }
 
