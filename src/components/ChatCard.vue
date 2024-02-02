@@ -8,7 +8,7 @@ const props = defineProps({
     type: String,
     validator(value) {
       // The value must match one of these strings
-      return ['bot', 'user'].includes(value)
+      return ['assistant', 'user', 'system'].includes(value)
     }
   },
   userName: {
@@ -28,7 +28,11 @@ const isDefaultUser = props.chatType === 'user' && props.userName && props.userN
 
 <template>
   <div class="chatCard">
-    <div class="chat__inner">
+    <div class="chat__system" v-if="props.chatType === 'system'">
+<!--      todo: 待完善system信息样式-->
+      {{ props.message}}
+    </div>
+    <div class="chat__inner" v-else>
       <div class="chat__avatar">
         <el-avatar size="small">
           <el-icon>
@@ -57,6 +61,12 @@ const isDefaultUser = props.chatType === 'user' && props.userName && props.userN
 
   width: 100%;
   max-width: calc(48rem + 40px);
+
+  .chat__system {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--el-text-color-disabled);
+  }
 
   .chat__inner {
     padding: 0 20px;

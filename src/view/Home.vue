@@ -11,6 +11,7 @@ const showConfig = ref(false)
 const inputValue = ref('')
 
 const messagesList = ref([
+  { chatType: 'system', userName: 'system', message: 'You are a helpful assistant' },
   { chatType: 'user', userName: 'allEN', message: 'Give me some python Example' },
   { chatType: 'bot', userName: 'Bot', message: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```'},
 ])

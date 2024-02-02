@@ -14,10 +14,10 @@ const props = defineProps({
   chatType: {
     required: false,
     type: String,
-    default: 'bot',
+    default: 'assistant',
     validator(value) {
       // The value must match one of these strings
-      return ['bot', 'user'].includes(value)
+      return ['assistant', 'user', 'system'].includes(value)
     }
   }
 });
