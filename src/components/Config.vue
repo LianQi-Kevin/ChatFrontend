@@ -43,6 +43,12 @@ const APIOptions = [
     label: 'Version 3.0',
     APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3,
     APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3
+  },
+  {
+    value: 'V3.5',
+    label: 'Version 3.5',
+    APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3_5,
+    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3_5
   }
 ]
 
