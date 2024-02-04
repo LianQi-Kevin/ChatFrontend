@@ -59,13 +59,13 @@ function copyContent() {
   if (isSupported) {
     if (props.content.length === 0) {
       ElMessage({
-        message: 'No code to copy',
-        type: 'error'
+        message: 'Nothing to copy',
+        type: 'warning'
       })
     } else {
       copy(props.content)
       if(copied){
-        console.debug(`Copied to clipboard: ${text.value}`)
+        console.debug(`Copied to clipboard: ${props.content}`)
       }
     }
   } else {

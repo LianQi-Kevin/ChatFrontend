@@ -45,12 +45,12 @@ function copyCode() {
     if (props.content.length === 0) {
       ElMessage({
         message: 'No code to copy',
-        type: 'error'
+        type: 'warning'
       })
     } else {
       copy(props.content)
       if(copied){
-        console.debug(`Copied to clipboard: ${text.value}`)
+        console.debug(`Copied to clipboard: ${props.content}`)
         copyCodeBtnText.value = 'Copied'
         setTimeout(() => {
           copyCodeBtnText.value = 'Copy code'

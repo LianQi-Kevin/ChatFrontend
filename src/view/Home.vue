@@ -11,9 +11,9 @@ const showConfig = ref(false)
 const inputValue = ref('')
 
 const messagesList = ref([
-  { chatType: 'system', userName: 'system', message: 'You are a helpful assistant' },
+  { chatType: 'system', userName: 'system', message: 'You are a helpful assistant.', showSystem: true },
   { chatType: 'user', userName: 'allEN', message: 'Give me some python Example' },
-  { chatType: 'bot', userName: 'Bot', message: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```'},
+  { chatType: 'assistant', userName: 'Bot', message: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```' },
 ])
 
 onBeforeMount(async () => {
@@ -49,7 +49,7 @@ function submitMessage() {
       </div>
       <div class="conversations">
         <template v-for="item in messagesList">
-          <ChatCard :chatType="item.chatType" :message="item.message" :userName="item.userName"/>
+          <ChatCard :chatType="item.chatType" :message="item.message" :userName="item.userName" :showSystem="item.showSystem"/>
         </template>
       </div>
       <div class="inputArea">

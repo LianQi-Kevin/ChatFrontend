@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 
 /**
- * XunFei XingHuo LLM WebSocket Protocol Universal Authentication URL Generation.
+ * XunFei XingHuo LLM WebSocket Protocol Universal Authentication URL Generation. \
  * https://www.xfyun.cn/doc/spark/general_url_authentication.html
  *
  * @param {string} APIKey - The API key

@@ -1,6 +1,6 @@
 <script setup>
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
-import {Avatar, User} from "@element-plus/icons-vue";
+import {ArrowDown, ArrowUp, Avatar, User} from "@element-plus/icons-vue";
 
 const props = defineProps({
   chatType: {
@@ -19,20 +19,35 @@ const props = defineProps({
   message: {
     required: true,
     type: String
+  },
+  showSystem: {
+    required: false,
+    type: Boolean,
+    default: false
   }
 });
 
 const isDefaultUser = props.chatType === 'user' && props.userName && props.userName === 'You'
+const showSystemLine = ref(1)
 
+onMounted(() => {
+  console.debug(props)
+})
 </script>
 
 <template>
   <div class="chatCard">
-    <div class="chat__system" v-if="props.chatType === 'system'">
-<!--      todo: 待完善system信息样式-->
-      {{ props.message}}
+    <div class="chat__system" v-if="props.chatType === 'system' && props.showSystem">
+      <el-button class="chat__systemFlexBox" size="small" link
+                 @click="() => { showSystemLine=showSystemLine === 1 ? 99 : 1; }">
+        <el-icon v-if="showSystemLine === 1"><ArrowDown /></el-icon>
+        <el-icon v-else><ArrowUp /></el-icon>
+        <el-text type="info" :line-clamp="showSystemLine" translate class="chat__systemText">
+          {{ props.message}}
+        </el-text>
+      </el-button>
     </div>
-    <div class="chat__inner" v-else>
+    <div class="chat__inner" v-else-if="props.chatType !== 'system'">
       <div class="chat__avatar">
         <el-avatar size="small">
           <el-icon>
@@ -63,9 +78,26 @@ const isDefaultUser = props.chatType === 'user' && props.userName && props.userN
   max-width: calc(48rem + 40px);
 
   .chat__system {
-    text-align: center;
     font-size: 0.75rem;
     color: var(--el-text-color-disabled);
+
+    .chat__systemFlexBox {
+      display: block;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 60%;
+
+      :deep(span) {
+        align-items: flex-start;
+
+        .chat__systemText {
+          text-align: left;
+          margin-left: 5px;
+          overflow: hidden;
+          white-space: pre-wrap;
+        }
+      }
+    }
   }
 
   .chat__inner {

@@ -16,6 +16,7 @@
 * [ ] 支持 i18n
 * [ ] 支持已发送修改 [MarkdownRenderer.vue](src/components/MarkdownRenderer.vue)
 * [ ] 支持历史记录
+* [ ] 使用 [tauri](https://github.com/tauri-apps/tauri) 替换 electron-builder 封装桌面应用
 
 ---
 
