@@ -38,7 +38,7 @@ onMounted(async () => {
   })
 });
 
-const { text, copy, copied, isSupported } = useClipboard()
+const { copy, copied, isSupported } = useClipboard()
 
 function copyCode() {
   if (isSupported) {

@@ -29,10 +29,6 @@ const props = defineProps({
 
 const isDefaultUser = props.chatType === 'user' && props.userName && props.userName === 'You'
 const showSystemLine = ref(1)
-
-onMounted(() => {
-  console.debug(props)
-})
 </script>
 
 <template>

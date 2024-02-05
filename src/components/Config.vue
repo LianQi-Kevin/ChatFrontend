@@ -1,5 +1,7 @@
 <script setup>
 import DB from "@/tools/db.js"
+import { nanoid } from 'nanoid'
+
 
 const props = defineProps({
   submitCallable: {
@@ -8,11 +10,12 @@ const props = defineProps({
   }
 })
 
-const apiCredentials  = reactive({
+const apiCredentials = reactive({
   APPID: "",
   APISecret: "",
   APIKey: "",
-  APIVersion: "V3.0",
+  APIVersion: "V3.5",
+  UserID: nanoid(),
   APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3,
   APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3
 });
@@ -36,7 +39,8 @@ const APIOptions = [
     value: 'V2.0',
     label: 'Version 2.0',
     APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V2,
-    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V2
+    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V2,
+    disabled: true
   },
   {
     value: 'V3.0',
@@ -87,7 +91,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="configContent">
+  <div class="configContent" style="z-index: 99">
     <div class="configMask" />
     <el-card class="card-options">
       <template #header>
@@ -113,9 +117,12 @@ onMounted(async () => {
         <el-form-item label="APIKey" prop="APIKey">
           <el-input v-model="apiCredentials.APIKey" placeholder="Enter your App Key" clearable />
         </el-form-item>
+        <el-form-item label="UserID" prop="UserID">
+          <el-input v-model="apiCredentials.UserID" placeholder="Enter your User ID" disabled/>
+        </el-form-item>
         <el-form-item label="API Version" prop="APIVersion">
           <el-select v-model="apiCredentials.APIVersion" placeholder="Select" @change="updateAPI" >
-            <el-option v-for="item in APIOptions" :key="item.label" :label="item.label" :value="item.value" />
+            <el-option v-for="item in APIOptions" :key="item.label" :label="item.label" :value="item.value" :disabled="item.disabled"/>
           </el-select>
         </el-form-item>
         <el-form-item label="API Domain" prop="APIDomain">

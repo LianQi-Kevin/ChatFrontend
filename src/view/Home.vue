@@ -4,11 +4,12 @@ import Config from "@/components/Config.vue";
 import ChatSidebar from "@/components/ChatSidebar.vue";
 import ChatCard from "@/components/ChatCard.vue"
 import {DocumentAdd, Promotion, Refresh} from "@element-plus/icons-vue";
+import {WSRecorder} from "@/network/XingHuo.js";
 
 const apiCredentials = ref()
 const modelName = ref('')
 const showConfig = ref(false)
-const inputValue = ref('')
+const inputValue = ref('hello')
 
 const messagesList = ref([
   { chatType: 'system', userName: 'system', message: 'You are a helpful assistant.', showSystem: true },
@@ -30,10 +31,15 @@ async function updateApiCredentials() {
 }
 
 function submitMessage() {
-  console.debug(inputValue.value)
   // todo: 待封装相关请求函数
-  messagesList.value.push({ chatType: 'user', userName: 'You', message: inputValue.value })
-  inputValue.value = ''
+  messagesList.value.push({ role: 'user', content: inputValue.value })
+
+  // get localIndex data
+  // console.debug(apiCredentials)
+  const wsRender = new WSRecorder(apiCredentials.value.APPID, apiCredentials.value.APIKey, apiCredentials.value.APISecret)
+
+  wsRender.connectWebSocket(messagesList.value, undefined, undefined, undefined, 'general', 'wss://spark-api.xf-yun.com/v1.1/chat')
+  // inputValue.value = ''
 }
 </script>
 
@@ -48,8 +54,8 @@ function submitMessage() {
         <el-text class="modelName">{{ modelName }}</el-text>
       </div>
       <div class="conversations">
-        <template v-for="item in messagesList">
-          <ChatCard :chatType="item.chatType" :message="item.message" :userName="item.userName" :showSystem="item.showSystem"/>
+        <template v-for="{content, role, showSystem, userName} in messagesList">
+          <ChatCard :chatType="role" :message="content" :userName="userName" :showSystem="showSystem"/>
         </template>
       </div>
       <div class="inputArea">
@@ -60,7 +66,7 @@ function submitMessage() {
               <DocumentAdd style="transform: scale(1.2);"/>
             </el-icon>
           </el-button>
-          <el-button type="info" size="large" link class="refreshBtn" @click="() => {messagesList = []}">
+          <el-button type="info" size="large" link class="refreshBtn" @click="() => {messagesList = [messagesList[0]]}">
             New Chat
             <el-icon style="margin-left: 5px" >
               <Refresh style="transform: scale(1.2);"/>
