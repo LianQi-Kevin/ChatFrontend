@@ -12,9 +12,9 @@ const showConfig = ref(false)
 const inputValue = ref('hello')
 
 const messagesList = ref([
-  { chatType: 'system', userName: 'system', message: 'You are a helpful assistant.', showSystem: true },
-  { chatType: 'user', userName: 'allEN', message: 'Give me some python Example' },
-  { chatType: 'assistant', userName: 'Bot', message: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```' },
+  { role: 'system', userName: 'system', content: 'You are a helpful assistant.', showSystem: true },
+  { role: 'user', userName: 'allEN', content: 'Give me some python Example' },
+  { role: 'assistant', userName: 'Bot', content: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```' },
 ])
 
 onBeforeMount(async () => {
