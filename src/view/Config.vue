@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import router from "@/router";
-import Config from "@/components/Config.vue";
+import Config from "@/components/ConfigSpark.vue";
 
 
 </script>

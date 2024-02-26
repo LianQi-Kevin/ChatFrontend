@@ -1,7 +1,8 @@
 <script setup>
-import DB from "@/tools/db.js"
-import { nanoid } from 'nanoid'
+import DB from "@/tools/db.ts";
+import { nanoid } from 'nanoid';
 
+const SparkDB = new DB(import.meta.env.VITE_DB_NAME, import.meta.env.VITE_DB_STORE_NAME);
 
 const props = defineProps({
   submitCallable: {
@@ -54,7 +55,7 @@ const APIOptions = [
     APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3_5,
     APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3_5
   }
-]
+];
 
 function saveConfig(formEl) {
   // 更新 apiCredentials
@@ -62,7 +63,7 @@ function saveConfig(formEl) {
   formEl.validate((valid) => {
     if (valid) {
       console.debug(apiCredentials)
-      DB.setItem("apiCredentials", toRaw(apiCredentials));
+      SparkDB.setItem("apiCredentials", toRaw(apiCredentials));
 
       console.log(props)
       if (props.submitCallable) {
@@ -83,7 +84,7 @@ function updateAPI(value) {
 
 onMounted(async () => {
   // 获取 apiCredentials
-  const apiCredentials_ = await DB.getItem("apiCredentials");
+  const apiCredentials_ = await SparkDB.getItem("apiCredentials");
   if (apiCredentials_) {
     Object.assign(apiCredentials, apiCredentials_);
   }

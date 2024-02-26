@@ -3,7 +3,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import {ArrowDown, ArrowUp, Avatar, User} from "@element-plus/icons-vue";
 
 const props = defineProps({
-  chatType: {
+  role: {
     required: true,
     type: String,
     validator(value) {
@@ -11,14 +11,14 @@ const props = defineProps({
       return ['assistant', 'user', 'system'].includes(value)
     }
   },
+  content: {
+    required: true,
+    type: String
+  },
   userName: {
     required: false,
     type: String,
     default: 'You'
-  },
-  message: {
-    required: true,
-    type: String
   },
   showSystem: {
     required: false,
@@ -27,28 +27,28 @@ const props = defineProps({
   }
 });
 
-const isDefaultUser = props.chatType === 'user' && props.userName && props.userName === 'You'
+const isDefaultUser = props.role === 'user' && props.userName && props.userName === 'You'
 const showSystemLine = ref(1)
 </script>
 
 <template>
   <div class="chatCard">
-    <div class="chat__system" v-if="props.chatType === 'system' && props.showSystem">
+    <div class="chat__system" v-if="props.role === 'system' && props.showSystem">
       <el-button class="chat__systemFlexBox" size="small" link
                  @click="() => { showSystemLine=showSystemLine === 1 ? 99 : 1; }">
         <el-icon v-if="showSystemLine === 1"><ArrowDown /></el-icon>
         <el-icon v-else><ArrowUp /></el-icon>
         <el-text type="info" :line-clamp="showSystemLine" translate class="chat__systemText">
-          {{ props.message}}
+          {{ props.content }}
         </el-text>
       </el-button>
     </div>
-    <div class="chat__inner" v-else-if="props.chatType !== 'system'">
+    <div class="chat__inner" v-else-if="props.role !== 'system'">
       <div class="chat__avatar">
         <el-avatar size="small">
           <el-icon>
             <User v-if="isDefaultUser" />
-            <template v-else-if="props.chatType === 'user'">
+            <template v-else-if="props.role === 'user'">
               {{ props.userName.slice(0, 2).toUpperCase() }}
             </template>
             <Avatar v-else />
@@ -57,9 +57,9 @@ const showSystemLine = ref(1)
       </div>
       <div class="chat__messageBox">
         <div class="chat__userName">
-          {{ props.chatType === 'user' ? props.userName : 'Bot' }}
+          {{ props.role === 'user' ? props.userName : 'Bot' }}
         </div>
-        <MarkdownRenderer :content="props.message" :chatType="props.chatType"/>
+        <MarkdownRenderer :content="props.content" :role="props.role"/>
       </div>
     </div>
   </div>

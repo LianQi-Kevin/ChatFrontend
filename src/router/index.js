@@ -1,6 +1,8 @@
 import {createRouter, createWebHistory} from "vue-router";
 import routes from "@/router/routes.js";
-import DB from "@/tools/db.js";
+// import DB from "@/tools/db";
+
+// const SparkDB = new DB(import.meta.env.VITE_DB_NAME, import.meta.env.VITE_DB_STORE_NAME);
 
 // 创建路由
 const router = createRouter({
@@ -8,25 +10,25 @@ const router = createRouter({
     routes: routes,
 });
 
-router.beforeEach(async (to, _from, next) => {
-    if (to.meta['verifyAPIConfig']) {
-        // 校验config是否存在
-        if (await DB.getItem('apiCredentials')) {
-            // 已登录
-            next();
-        } else {
-            next({
-                path: '/config',
-                query: {
-                    redirect: to.fullPath
-                }
-            });
-        }
-    } else {
-        // 不需要鉴权，直接调用 next()
-        next();
-    }
-})
+// router.beforeEach(async (to, _from, next) => {
+//     if (to.meta['verifyAPIConfig']) {
+//         // 校验config是否存在
+//         if (await SparkDB.getItem('apiCredentials')) {
+//             // 已登录
+//             next();
+//         } else {
+//             next({
+//                 path: '/config',
+//                 query: {
+//                     redirect: to.fullPath
+//                 }
+//             });
+//         }
+//     } else {
+//         // 不需要鉴权，直接调用 next()
+//         next();
+//     }
+// })
 
 
 // 根据meta.title修改页面标题

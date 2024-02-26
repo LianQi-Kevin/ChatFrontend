@@ -1,61 +1,68 @@
-<script setup>
-import DB from '@/tools/db.js';
-import Config from "@/components/Config.vue";
-import ChatSidebar from "@/components/ChatSidebar.vue";
+<script setup lang="ts">
+// import DB from '@/tools/db.ts';
+import Config from "@/components/ConfigSpark.vue";
 import ChatCard from "@/components/ChatCard.vue"
 import {DocumentAdd, Promotion, Refresh} from "@element-plus/icons-vue";
-import {WSRecorder} from "@/network/XingHuo.js";
+import {listModels} from "@/network/OpenaiApi"
+import {openaiChatCompletionRequestMessages} from "@/types/OpenaiAPITypes";
 
-const apiCredentials = ref()
-const modelName = ref('')
-const showConfig = ref(false)
-const inputValue = ref('hello')
+const modelName: Ref<string> = ref('');
+let modelList: {label: string; value: string}[] = []
+const showConfig: Ref<boolean> = ref(false)
+const inputValue: Ref<string> = ref('hello')
 
-const messagesList = ref([
-  { role: 'system', userName: 'system', content: 'You are a helpful assistant.', showSystem: true },
-  { role: 'user', userName: 'allEN', content: 'Give me some python Example' },
+interface messagesListType extends openaiChatCompletionRequestMessages{
+  userName?: string;
+}
+
+const messagesList: Ref<messagesListType[]> = ref([
+  { role: 'system', userName: 'system', content: 'You are a helpful assistant.'},
+  { role: 'user', content: 'Give me some python Example' },
   { role: 'assistant', userName: 'Bot', content: 'Sure\n```python\ndoc.sections[0].page_height = Cm(29.7)\n```' },
 ])
 
-onBeforeMount(async () => {
-  apiCredentials.value = await DB.getItem("apiCredentials")
-  modelName.value = `讯飞星火认知大模型 ${apiCredentials.value ? apiCredentials.value['APIVersion'] : ''}`
-});
 
 async function updateApiCredentials() {
-  DB.getItem("apiCredentials").then((res) => {
-    apiCredentials.value = res
-    console.debug(apiCredentials.value)
-  })
-  showConfig.value = false
+//   OpenAI_DB.getItem("apiCredentials").then((res) => {
+//     apiCredentials.value = res
+//     console.debug(apiCredentials.value)
+//   })
+//   showConfig.value = false
 }
 
 function submitMessage() {
   // todo: 待封装相关请求函数
-  messagesList.value.push({ role: 'user', content: inputValue.value })
+  // messagesList.value.push({ role: 'user', content: inputValue.value })
 
-  // get localIndex data
-  // console.debug(apiCredentials)
-  const wsRender = new WSRecorder(apiCredentials.value.APPID, apiCredentials.value.APIKey, apiCredentials.value.APISecret)
-
-  wsRender.connectWebSocket(messagesList.value, undefined, undefined, undefined, 'general', 'wss://spark-api.xf-yun.com/v1.1/chat')
   // inputValue.value = ''
 }
+
+const baseURL = "https://u23218-b635-989ec868.beijinga.seetacloud.com/"
+
+onBeforeMount(() => {
+  nextTick(async () => {
+    modelList = (await listModels(baseURL)).map(item => {return {label: item, value: item}})
+    modelName.value = modelList[0].value
+    // console.log(modelList)
+    // console.log(modelList)
+    // await createCompletion(baseURL, [{"role": "user", "content": "hello"}],
+    //   "google/gemma-7b-it", {stream: false})
+  })
+})
 </script>
 
 <template>
   <div class="content">
     <Config v-if="showConfig" :submitCallable="updateApiCredentials"/>
-    <div class="sidebar" v-if="false">
-      <ChatSidebar :userid="''" :model-name="modelName" />
-    </div>
     <div class="main">
-      <div class="header" v-if="false">
-        <el-text class="modelName">{{ modelName }}</el-text>
+      <div class="header">
+        <el-select v-model="modelName" placeholder="Model" >
+          <el-option v-for="item in modelList" :key="item.label" :label="item.label" :value="item.value" />
+        </el-select>
       </div>
       <div class="conversations">
-        <template v-for="{content, role, showSystem, userName} in messagesList">
-          <ChatCard :chatType="role" :message="content" :userName="userName" :showSystem="showSystem"/>
+        <template v-for="{content, role, userName} in messagesList">
+          <ChatCard :role="role" :content="content" :userName="userName"/>
         </template>
       </div>
       <div class="inputArea">
@@ -78,7 +85,7 @@ function submitMessage() {
             maxlength="4000" :autosize="{ minRows: 1, maxRows: 6 }" type="textarea"
             show-word-limit
           />
-          <el-button class="submitBtn"  @click="submitMessage()" :disabled="!inputValue.length > 0">
+          <el-button class="submitBtn"  @click="submitMessage()" :disabled="!(inputValue.length > 0)">
             <el-icon >
               <Promotion style="transform: scale(1.3);"/>
             </el-icon>
@@ -118,21 +125,24 @@ function submitMessage() {
   display: flex;
   flex-direction: row;
 
-  .sidebar {
-    flex-basis: 260px;
-    flex-grow: 0;
-
-    background: var(--el-fill-color-extra-light);
-  }
-
   .main {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
 
-    .conversations{
-      margin-top: 25px;
+    .header {
+      padding: 8px;
+      display: flex;
+      flex-direction: row;
+      :deep(.el-select__wrapper){
+        box-shadow: none;
 
+        font-size: 18px;
+        font-weight: 500;
+      }
+    }
+
+    .conversations{
       width: 100%;
       flex-grow: 1;
 

@@ -11,7 +11,7 @@ const props = defineProps({
     required: true,
     type: String
   },
-  chatType: {
+  role: {
     required: false,
     type: String,
     default: 'assistant',
@@ -87,7 +87,7 @@ function copyContent() {
         <el-button class="markdown__Copy" link @click="copyContent()">
           <el-icon><CopyDocument /></el-icon>
         </el-button>
-        <el-button class="markdown__Change" link v-if="false && props.chatType === 'user'">
+        <el-button class="markdown__Change" link v-if="false && props.role === 'user'">
           <el-icon><Edit style="width: 14px; height: 14px"/></el-icon>
         </el-button>
       </div>
