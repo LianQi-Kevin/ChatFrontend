@@ -16,7 +16,7 @@ const HEADERS = {
 }
 
 const apiClient = axios.create({
-    timeout: 3000,
+    timeout: undefined,
     headers: HEADERS
 })
 
@@ -39,7 +39,7 @@ export async function listModels(url: string): Promise<string[]> {
 }
 
 // v1/chat/completions
-export async function createCompletion(
+export async function createChatCompletion(
     url: string,
     messages: openaiChatCompletionRequestMessages[],
     model_name: string,
@@ -71,20 +71,20 @@ export async function createCompletion(
             // todo - handle stream
         }
     } else {
-        apiClient({
-            method: "post",
-            url: completionURL.toString(),
-            data: {
-                messages: messages,
-                model: model_name,
-                ...additionalParams
-            }
-        }).then(response => {
+        try {
+            const response = await apiClient({
+                method: "post",
+                url: completionURL.toString(),
+                data: {
+                    messages: messages,
+                    model: model_name,
+                    ...additionalParams
+                }
+            })
             const data = response.data as openaiChatCompletionResponse
-            console.log(data)
-            // console.log(data.choices[0].message?.content)
-        }).catch(error => {
+            return data.choices[0].message?.content
+        } catch (error) {
             console.error(error)
-        })
+        }
     }
 }

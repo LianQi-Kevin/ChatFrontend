@@ -2,52 +2,68 @@
 // import DB from '@/tools/db.ts';
 import Config from "@/components/ConfigSpark.vue";
 import ChatCard from "@/components/ChatCard.vue"
-import {Promotion, Refresh, Share} from "@element-plus/icons-vue";
-import {listModels} from "@/network/OpenaiApi"
-import {openaiChatCompletionRequestMessages} from "@/types/OpenaiAPITypes";
-import UploadBtn from "@/components/UploadBtn.vue";
-// import type {UploadInstance, UploadProps, UploadRawFile } from "element-plus";
+import {DocumentAdd, Promotion, Refresh, Share} from "@element-plus/icons-vue";
+import {createChatCompletion, listModels} from "@/network/OpenaiApi"
+import type {openaiChatCompletionRequestMessages} from "@/types/OpenaiAPITypes";
+import type {UploadRawFile, UploadInstance, UploadRequestOptions } from "element-plus";
 
-// const upload = ref<UploadInstance>()
 const modelName = ref<string>('');
 let modelList = reactive<{label: string; value: string}[]>([])
 const showConfig = ref<boolean>(false)
-const inputValue = ref<string>('hello')
 
-interface messagesListType extends openaiChatCompletionRequestMessages{
-  userName?: string;
-}
-
-const messagesList = ref<messagesListType[]>([
-  { role: 'system', userName: 'system', content: 'You are a helpful assistant.'},
-])
-
-
-async function updateApiCredentials() {
-//   OpenAI_DB.getItem("apiCredentials").then((res) => {
-//     apiCredentials.value = res
-//     console.debug(apiCredentials.value)
-//   })
-//   showConfig.value = false
-}
-
-function submitMessage() {
-  messagesList.value.push({ role: 'user', content: inputValue.value })
-
-  // inputValue.value = ''
-}
-
+// todo: move to a config component
 const baseURL = "https://u23218-b635-989ec868.beijinga.seetacloud.com/"
 
 onMounted(() => {
   nextTick(async () => {
     (await listModels(baseURL)).map(item => {modelList.push({label: item.split('/')[1], value: item}) })
     modelName.value = modelList[0]?.value
-    // console.log(modelList)
-    // await createCompletion(baseURL, [{"role": "user", "content": "hello"}],
-    //   "google/gemma-7b-it", {stream: false})
   })
 })
+
+
+async function updateApiCredentials() {
+}
+
+// to ChatCard.vue
+interface messagesListType extends openaiChatCompletionRequestMessages{
+  userName?: string;
+}
+
+const inputValue = ref<string>('hello')
+const submitLoading = ref<boolean>(false)
+const messagesList = ref<messagesListType[]>([])
+
+function submitMessage() {
+  messagesList.value.push({ role: 'user', content: inputValue.value })
+  submitLoading.value = true
+
+  createChatCompletion(baseURL, messagesList.value, modelName.value, {stream: false}).then(response => {
+    if (response) {
+      messagesList.value.push({ role: 'assistant', content: response})
+      inputValue.value = ''
+    } else {
+      messagesList.value.pop()
+    }
+
+    submitLoading.value = false
+  })
+}
+
+function refreshMessages() {
+  messagesList.value = messagesList.value.filter(message => message.role === 'system');
+}
+
+
+// to UploadBtn.vue
+const uploadRef = ref<UploadInstance>()
+const uploadFileList = reactive<UploadRawFile[]>([])
+
+function UploadRequest(options: UploadRequestOptions) {
+  console.log('request')
+  uploadFileList.push(options.file)
+  console.log(uploadFileList)
+}
 </script>
 
 <template>
@@ -66,9 +82,30 @@ onMounted(() => {
         </template>
       </div>
       <div class="inputArea">
+        <div class="uploadPreview" v-if="uploadFileList.length != 0">
+          <template v-for="file in uploadFileList">
+            <el-text >{{file.name}}</el-text>
+          </template>
+        </div>
         <div class="rowTools">
-          <UploadBtn />
-          <el-button type="info" size="large" link class="refreshBtn" @click="() => {messagesList = [messagesList[0]]}">
+          <el-upload
+            action="#"
+            class="uploadMain"
+            ref="uploadRef"
+            :multiple="true"
+            :show-file-list="false"
+            :accept="`.jpg, .jpeg, .png, .webp, .bmp`"
+            :limit="5"
+            :http-request="UploadRequest"
+          >
+            <el-button type="info" size="large" link class="uploadBtn">
+              Select Files
+              <el-icon style="margin-left: 5px" >
+                <DocumentAdd style="transform: scale(1.2);"/>
+              </el-icon>
+            </el-button>
+          </el-upload>
+          <el-button type="info" size="large" link class="refreshBtn" @click="refreshMessages">
             New Chat
             <el-icon style="margin-left: 5px" >
               <Refresh style="transform: scale(1.2);"/>
@@ -78,9 +115,9 @@ onMounted(() => {
         <div class="rowInput">
           <el-input class="inputText" placeholder="Please type here" v-model="inputValue"
             maxlength="4000" :autosize="{ minRows: 1, maxRows: 6 }" type="textarea"
-            show-word-limit
+            show-word-limit @keyup.enter.native="submitMessage"
           />
-          <el-button class="submitBtn"  @click="submitMessage()" :disabled="!(inputValue.length > 0)">
+          <el-button class="submitBtn" @click="submitMessage" :disabled="!(inputValue.length > 0) || submitLoading">
             <el-icon >
               <Promotion style="transform: scale(1.3);"/>
             </el-icon>
@@ -162,6 +199,18 @@ onMounted(() => {
       flex-direction: column;
       align-items: center;
 
+      .uploadPreview {
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+        align-items: center;
+        margin: 5px;
+
+        //max-height: 50px;
+        min-width: 200px;
+        width: 100%;
+        max-width: 770px;
+      }
 
       .rowTools{
         display: flex;
