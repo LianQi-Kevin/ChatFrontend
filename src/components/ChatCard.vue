@@ -1,6 +1,6 @@
 <script setup>
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
-import {ArrowDown, ArrowUp, Avatar, User} from "@element-plus/icons-vue";
+import {ArrowDown, ArrowUp, Avatar, Loading, User} from "@element-plus/icons-vue";
 
 const props = defineProps({
   role: {
@@ -21,6 +21,11 @@ const props = defineProps({
     default: 'You'
   },
   showSystem: {
+    required: false,
+    type: Boolean,
+    default: false
+  },
+  loading: {
     required: false,
     type: Boolean,
     default: false
@@ -59,7 +64,8 @@ const showSystemLine = ref(1)
         <div class="chat__userName">
           {{ props.role === 'user' ? props.userName : 'Bot' }}
         </div>
-        <MarkdownRenderer :content="props.content" :role="props.role"/>
+        <el-icon class="is-loading"  v-if="props.loading"><Loading /></el-icon>
+        <MarkdownRenderer :content="props.content" :role="props.role" v-else/>
       </div>
     </div>
   </div>

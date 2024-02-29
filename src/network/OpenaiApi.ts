@@ -53,7 +53,12 @@ export async function createChatCompletion(
             method: 'POST',
             headers: HEADERS,
             body: JSON.stringify({
-                messages: messages,
+                messages: messages.map(message => {
+                    return {
+                        role: message.role,
+                        content: message.content
+                    }
+                }),
                 model: model_name,
                 ...additionalParams
             })

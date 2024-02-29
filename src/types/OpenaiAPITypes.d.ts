@@ -28,7 +28,7 @@ export interface openaiChatCompletionRequestParams {
 export interface openaiChatCompletionRequestMessages {
     role: "system" | "user" | "assistant";
     content: string | {
-        type: "image" | "text";
+        type: "image_url" | "text";
         image_url?: { url: string };
         text?: string;
     }[];

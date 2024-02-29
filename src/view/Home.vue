@@ -6,13 +6,14 @@ import {DocumentAdd, Promotion, Refresh, Share} from "@element-plus/icons-vue";
 import {createChatCompletion, listModels} from "@/network/OpenaiApi"
 import type {openaiChatCompletionRequestMessages} from "@/types/OpenaiAPITypes";
 import type {UploadRawFile, UploadInstance, UploadRequestOptions } from "element-plus";
+import {getBase64} from "@/tools/base64";
 
 const modelName = ref<string>('');
 let modelList = reactive<{label: string; value: string}[]>([])
 const showConfig = ref<boolean>(false)
 
 // todo: move to a config component
-const baseURL = "https://u23218-b635-989ec868.beijinga.seetacloud.com/"
+const baseURL = "https://u23218-bcf9-65e4e0f6.westx.seetacloud.com:8443/"
 
 onMounted(() => {
   nextTick(async () => {
@@ -25,23 +26,67 @@ onMounted(() => {
 async function updateApiCredentials() {
 }
 
-// to ChatCard.vue
+// to PromptArea.vue
 interface messagesListType extends openaiChatCompletionRequestMessages{
   userName?: string;
+  loading?: boolean;
 }
 
-const inputValue = ref<string>('hello')
+const inputValue = ref<string>('what in this picture?')
 const submitLoading = ref<boolean>(false)
 const messagesList = ref<messagesListType[]>([])
 
+
+function handleEnterKey(event: KeyboardEvent) {
+  if (event.ctrlKey && event.target instanceof HTMLTextAreaElement) {
+    // 在当前光标位置插入一个新行字符
+    const start = event.target.selectionStart;
+    const end = event.target.selectionEnd;
+    inputValue.value = inputValue.value.substring(0, start) + "\n" + inputValue.value.substring(end);
+    // 将光标移动到插入的新行字符之后
+    setTimeout(() => {
+      if (event.target instanceof HTMLTextAreaElement) {
+        event.target.selectionStart = event.target.selectionEnd = start + 1;
+      }
+    }, 0);
+  } else {
+    // 输入内容非空或全为\n
+    if (inputValue.value.trim() !== '' && !inputValue.value.match(/^\n+$/)) {
+      submitMessage()
+    }
+  }
+}
+
 function submitMessage() {
-  messagesList.value.push({ role: 'user', content: inputValue.value })
+  console.log(uploadFileList)
+  if (uploadFileList.length) {
+    const base64List: string | { type: "image_url" | "text"; image_url?: { url: string }; text?: string; }[] = [
+      {type: "text", text: inputValue.value}
+    ]
+
+    // todo: wrong here, file didn't added to base64List
+    uploadFileList.forEach(async file => {
+      const base64 = await getBase64(file)
+      if (base64 as string) {
+        base64List.push({ type: "image_url", image_url: { url: base64 } })
+      }
+    })
+
+    messagesList.value.push({ role: 'user', content: base64List })
+    uploadFileList.length = 0 // 清理uploadFileList
+  } else {
+    messagesList.value.push({ role: 'user', content: inputValue.value })
+  }
+  inputValue.value = ''
   submitLoading.value = true
+  setTimeout(() => {
+    messagesList.value.push({ role: 'assistant', content: "", loading: true })
+  }, 200)
 
   createChatCompletion(baseURL, messagesList.value, modelName.value, {stream: false}).then(response => {
     if (response) {
-      messagesList.value.push({ role: 'assistant', content: response})
-      inputValue.value = ''
+      messagesList.value[messagesList.value.length - 1].loading = false
+      messagesList.value[messagesList.value.length - 1].content = response
     } else {
       messagesList.value.pop()
     }
@@ -51,7 +96,7 @@ function submitMessage() {
 }
 
 function refreshMessages() {
-  messagesList.value = messagesList.value.filter(message => message.role === 'system');
+  messagesList.value.length = messagesList.value[0]?.role === 'system' ? 1 : 0
 }
 
 
@@ -60,9 +105,9 @@ const uploadRef = ref<UploadInstance>()
 const uploadFileList = reactive<UploadRawFile[]>([])
 
 function UploadRequest(options: UploadRequestOptions) {
-  console.log('request')
+  console.debug(`Upload File: ${options.file.name}`)
+  // console.debug(options.file)
   uploadFileList.push(options.file)
-  console.log(uploadFileList)
 }
 </script>
 
@@ -77,8 +122,8 @@ function UploadRequest(options: UploadRequestOptions) {
         <el-button disabled> <el-icon><Share style="transform: scale(1.2);"/></el-icon></el-button>
       </div>
       <div class="conversations">
-        <template v-for="{content, role, userName} in messagesList">
-          <ChatCard :role="role" :content="content" :userName="userName"/>
+        <template v-for="{content, role, userName, loading} in messagesList">
+          <ChatCard :role="role" :content="content" :userName="userName" :loading="loading"/>
         </template>
       </div>
       <div class="inputArea">
@@ -115,7 +160,7 @@ function UploadRequest(options: UploadRequestOptions) {
         <div class="rowInput">
           <el-input class="inputText" placeholder="Please type here" v-model="inputValue"
             maxlength="4000" :autosize="{ minRows: 1, maxRows: 6 }" type="textarea"
-            show-word-limit @keyup.enter.native="submitMessage"
+            show-word-limit @keyup.enter.native="handleEnterKey"
           />
           <el-button class="submitBtn" @click="submitMessage" :disabled="!(inputValue.length > 0) || submitLoading">
             <el-icon >
