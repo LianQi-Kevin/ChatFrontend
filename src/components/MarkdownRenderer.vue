@@ -1,6 +1,6 @@
 <!--suppress ALL -->
 <script setup>
-import md from '@/tools/markdown.js'
+import md from '@/tools/markdown'
 import "github-markdown-css/github-markdown.css";
 import CodeCard from '@/components/CodeCard.vue'
 import {useClipboard, useThrottleFn} from '@vueuse/core'
@@ -51,7 +51,7 @@ function replaceCodeCard() {
   });
 }
 
-const throttledReplaceCodeCard = useThrottleFn(replaceCodeCard, 1000);
+const throttledReplaceCodeCard = useThrottleFn(replaceCodeCard, 500);
 
 const { text, copy, copied, isSupported } = useClipboard()
 

@@ -5,7 +5,7 @@ import {
     openaiChatCompletionRequestParams,
     openaiChatCompletionResponse,
     openaiListModelsResponse
-} from '@/types/OpenaiAPITypes'
+} from '@/types/OpenaiAPI'
 
 const API_VERSION: string = "v1"
 const OPENAI_API_KEY: string = "EMPTY"
@@ -25,17 +25,19 @@ export async function listModels(url: string): Promise<string[]> {
     /* List all available models. */
     const modelListURL = new URL(url)
     modelListURL.pathname = `/${API_VERSION}/models`
-    try {
-        const response = await apiClient({
+
+    return new Promise((resolve, reject) => {
+        apiClient({
             method: "GET",
             url: modelListURL.toString()
+        }).then(response => {
+            const data: openaiListModelsResponse = response.data
+            resolve(data.data.map(model => model.id))
+        }).catch(error => {
+            console.error(error)
+            reject(error)
         })
-        const data = response.data as openaiListModelsResponse
-        return data.data.map(model => model.id)
-    } catch (error) {
-        console.error(error)
-        return []
-    }
+    })
 }
 
 // v1/chat/completions
@@ -44,38 +46,12 @@ export async function createChatCompletion(
     messages: openaiChatCompletionRequestMessages[],
     model_name: string,
     additionalParams?: openaiChatCompletionRequestParams,
-) {
+): Promise<openaiChatCompletionResponse> {
     /* Create a chat completion. */
     const completionURL = new URL(url)
     completionURL.pathname = `/${API_VERSION}/chat/completions`
-    if (additionalParams?.stream) {
-        const response = await fetch(completionURL.toString(), {
-            method: 'POST',
-            headers: HEADERS,
-            body: JSON.stringify({
-                messages: messages.map(message => {
-                    return {
-                        role: message.role,
-                        content: message.content
-                    }
-                }),
-                model: model_name,
-                ...additionalParams
-            })
-        })
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        // decode stream
-        if (response.body) {
-            // const reader = response.body.getReader();
-            // const decoder = new TextDecoder('utf-8');
-
-            // todo - handle stream
-        }
-    } else {
+    // todo: unsupported stream
+    return new Promise(async (resolve, reject) => {
         try {
             const response = await apiClient({
                 method: "post",
@@ -86,10 +62,11 @@ export async function createChatCompletion(
                     ...additionalParams
                 }
             })
-            const data = response.data as openaiChatCompletionResponse
-            return data.choices[0].message?.content
+            const data: openaiChatCompletionResponse = response.data
+            resolve(data)
         } catch (error) {
             console.error(error)
+            reject(error)
         }
-    }
+    })
 }

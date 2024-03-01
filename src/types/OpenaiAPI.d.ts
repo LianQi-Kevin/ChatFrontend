@@ -25,13 +25,16 @@ export interface openaiChatCompletionRequestParams {
 }
 
 // /v1/chat/completions
+export interface openaiChatCompletionRequestMessagesContent {
+    type: "image_url" | "text";
+    image_url?: { url: string };
+    text?: string;
+}
+
+
 export interface openaiChatCompletionRequestMessages {
     role: "system" | "user" | "assistant";
-    content: string | {
-        type: "image_url" | "text";
-        image_url?: { url: string };
-        text?: string;
-    }[];
+    content: string | openaiChatCompletionRequestMessagesContent[];
 }
 
 interface openaiChatCompletionRequest extends openaiChatCompletionRequestParams {

@@ -1,77 +1,85 @@
-<script setup>
+<script lang="ts" setup>
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
-import {ArrowDown, ArrowUp, Avatar, Loading, User} from "@element-plus/icons-vue";
+import {ArrowDown, ArrowUp, Avatar, User, WarningFilled} from "@element-plus/icons-vue";
+import type {FilePreviewRaw} from "@/components/FilePreview.vue";
+import FilePreview from "@/components/FilePreview.vue";
 
-const props = defineProps({
-  role: {
-    required: true,
-    type: String,
-    validator(value) {
-      // The value must match one of these strings
-      return ['assistant', 'user', 'system'].includes(value)
-    }
-  },
-  content: {
-    required: true,
-    type: String
-  },
-  userName: {
-    required: false,
-    type: String,
-    default: 'You'
-  },
-  showSystem: {
-    required: false,
-    type: Boolean,
-    default: false
-  },
-  loading: {
-    required: false,
-    type: Boolean,
-    default: false
-  }
+export interface ChatCardProps {
+  role: "assistant" | "user" | "system";  // 角色
+  text: string; // 消息内容
+  time?: string; // 时间截
+  fileList?: FilePreviewRaw[]; // 文件列表
+  userName?: string;
+  showSystem?: boolean;
+  loading?: boolean;
+  requestError?: boolean;
+  onError?: Function; // Retry btn 回调
+}
+
+const props = withDefaults(defineProps<ChatCardProps>(), {
+  userName: "You",
+  showSystem: false,
+  loading: false,
+  requestError: false,
 });
 
-const isDefaultUser = props.role === 'user' && props.userName && props.userName === 'You'
-const showSystemLine = ref(1)
+// 是否是默认用户名
+const isDefaultUser: boolean = !!(props.role === 'user' && props.userName && props.userName === 'You')
+const showSystemLine = ref<number>(1)
 </script>
 
 <template>
   <div class="chatCard">
-    <div class="chat__system" v-if="props.role === 'system' && props.showSystem">
-      <el-button class="chat__systemFlexBox" size="small" link
+    <div v-if="props.role === 'system' && props.showSystem" class="chat__system">
+      <el-button class="chat__systemFlexBox" link size="small"
                  @click="() => { showSystemLine=showSystemLine === 1 ? 99 : 1; }">
-        <el-icon v-if="showSystemLine === 1"><ArrowDown /></el-icon>
-        <el-icon v-else><ArrowUp /></el-icon>
-        <el-text type="info" :line-clamp="showSystemLine" translate class="chat__systemText">
-          {{ props.content }}
+        <el-icon v-if="showSystemLine === 1">
+          <ArrowDown/>
+        </el-icon>
+        <el-icon v-else>
+          <ArrowUp/>
+        </el-icon>
+        <el-text :line-clamp="showSystemLine" class="chat__systemText" translate type="info">
+          {{ props.text }}
         </el-text>
       </el-button>
     </div>
-    <div class="chat__inner" v-else-if="props.role !== 'system'">
+    <div v-else-if="props.role !== 'system'" class="chat__inner">
       <div class="chat__avatar">
         <el-avatar size="small">
           <el-icon>
-            <User v-if="isDefaultUser" />
+            <User v-if="isDefaultUser"/>
             <template v-else-if="props.role === 'user'">
               {{ props.userName.slice(0, 2).toUpperCase() }}
             </template>
-            <Avatar v-else />
+            <Avatar v-else/>
           </el-icon>
         </el-avatar>
       </div>
       <div class="chat__messageBox">
-        <div class="chat__userName">
-          {{ props.role === 'user' ? props.userName : 'Bot' }}
+        <div class="chat__mainTitle">
+          <el-text size="large" tag="b">
+            {{ props.role === 'user' ? props.userName : 'Bot' }}
+          </el-text>
+          <el-text class="chat__titleTime" size="default" type="info">
+            {{ props.time }}
+          </el-text>
         </div>
-        <el-icon class="is-loading"  v-if="props.loading"><Loading /></el-icon>
-        <MarkdownRenderer :content="props.content" :role="props.role" v-else/>
+        <div v-if="props.loading" id="chat__loading" style="margin-top: 10px; margin-left: 5px;width: 20px"/>
+        <FilePreview v-if="props.fileList && props.fileList.length && !props.requestError" :file-list="props.fileList"/>
+        <MarkdownRenderer v-if="!props.loading && !props.requestError" :content="props.text" :role="props.role"/>
+
+        <div v-if="props.requestError">
+          <el-button :icon="WarningFilled" plain style="margin-top: 10px" type="danger" @click="props.onError">
+            Retry
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .chatCard {
   padding: 8px 16px;
   margin: 0 auto;
@@ -114,7 +122,8 @@ const showSystemLine = ref(1)
       display: flex;
       flex-direction: column;
       justify-content: start;
-      span{
+
+      span {
         font-size: var(--el-font-size-small);
       }
     }
@@ -128,13 +137,40 @@ const showSystemLine = ref(1)
       position: relative;
       box-sizing: border-box;
 
-
-      .chat__userName {
-        font-size: 1rem;
-        line-height: 1.5rem;
-        font-weight: 600;
+      .chat__mainTitle {
+        .chat__titleTime {
+          margin-left: 10px;
+        }
       }
     }
+  }
+}
+
+#chat__loading {
+  aspect-ratio: 1;
+  --c: no-repeat linear-gradient(0deg, var(--el-text-color-primary), var(--el-text-color-primary));
+  background: var(--c) 0 50%,
+  var(--c) 50% 50%,
+  var(--c) 100% 50%;
+  background-size: 20% 100%;
+  animation: l1 1s infinite linear;
+}
+
+@keyframes l1 {
+  0% {
+    background-size: 20% 100%, 20% 100%, 20% 100%
+  }
+  33% {
+    background-size: 20% 10%, 20% 100%, 20% 100%
+  }
+  50% {
+    background-size: 20% 100%, 20% 10%, 20% 100%
+  }
+  66% {
+    background-size: 20% 100%, 20% 100%, 20% 10%
+  }
+  100% {
+    background-size: 20% 100%, 20% 100%, 20% 100%
   }
 }
 </style>
