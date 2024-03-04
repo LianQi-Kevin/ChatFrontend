@@ -8,11 +8,11 @@ import type {FilePreviewRaw} from "@/components/FilePreview.vue";
 import FilePreview from "@/components/FilePreview.vue";
 import {DocumentAdd, Promotion, Refresh, Share} from "@element-plus/icons-vue";
 import {createChatCompletion, listModels} from "@/network/OpenaiApi"
-import type {openaiChatCompletionRequestMessagesContent} from "@/types/OpenaiAPI";
-import type {UploadInstance, UploadRequestOptions} from "element-plus";
+import {openaiChatCompletionRequestMessagesContent, openaiFileResponseObject} from "@/types/OpenaiAPI";
+import type {UploadInstance, UploadProgressEvent, UploadRequestOptions} from "element-plus";
 import {useThrottleFn} from '@vueuse/core'
-import {getBase64} from "@/tools/base64";
 import {convertUnixTimeToFormattedTime, getCurrentFormattedTime} from "@/tools/nowTime";
+import {isNil} from "lodash-es";
 
 const modelName = ref<string>('');
 const modelList = reactive<{ label: string; value: string }[]>([])
@@ -76,12 +76,16 @@ async function createMessageContent(query: string, fileList?: FilePreviewRaw[]):
 > {
   // todo: support more file types
   if (fileList && fileList.length) {
-    const base64List: openaiChatCompletionRequestMessagesContent[] = []
+    const imageList: openaiChatCompletionRequestMessagesContent[] = []
     // add img_b64
-    fileList.map(file => base64List.push({type: "image_url", image_url: {url: file.url}}))
+    fileList.map(file => {
+      if (file.raw.type.includes('image') && file.url) {
+        return imageList.push({type: "image_url", image_url: {url: file.url}})
+      }
+    })
     // add text
-    base64List.push({type: "text", text: query})
-    return base64List
+    imageList.push({type: "text", text: query})
+    return imageList
   }
   return query
 }
@@ -108,7 +112,9 @@ async function submitMessage() {
   submitLoading.value = true
 
   // clone messagesList
-  const messagesWithoutPlaceholder = [...messagesList.value];
+  const messagesWithoutPlaceholder = messagesList.value.map(({role, content}) => {
+    return {role: role, content: content}
+  });
 
   // 添加占位符到 messagesList
   const placeholderIndex = messagesList.value.push({content: '', role: 'assistant', loading: true, text: ""}) - 1;
@@ -147,16 +153,101 @@ function refreshMessages() {
 const uploadRef = ref<UploadInstance>()
 const uploadFileList = ref<FilePreviewRaw[]>([])
 
-function UploadRequest(options: UploadRequestOptions) {
-  console.debug(`Upload File: ${options.file.name}`)
-  // todo: support more file types
-  getBase64(options.file).then(base64 => {
-    uploadFileList.value.push({raw: options.file, url: base64})
-  })
-}
-
 function removeUploadItem(index: number) {
   uploadFileList.value.splice(index, 1)
+}
+
+function findItemByUid(uid: number) {
+  return uploadFileList.value.find(item => item.uid === uid);
+}
+
+
+function getBody(xhr: XMLHttpRequest): XMLHttpRequestResponseType {
+  const text = xhr.responseText || xhr.response
+  if (!text) {
+    return text
+  }
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+function ajaxUpload(option: UploadRequestOptions): XMLHttpRequest {
+  const xhr = new XMLHttpRequest();
+  const action: string = `${baseURL}v1/files` // 请求URL
+
+  if (xhr.upload) {
+    xhr.upload.addEventListener('progress', (evt: ProgressEvent) => {
+      const progressEvt = evt as UploadProgressEvent
+      progressEvt.percent = evt.total > 0 ? (evt.loaded / evt.total) * 100 : 0
+      console.debug('progressEvt:', progressEvt)
+      const fileItem = findItemByUid(option.file.uid);
+      if (fileItem) {
+        // 更新该文件的上传进度
+        fileItem.progress = Math.trunc(progressEvt.percent);
+      }
+    })
+  }
+
+  // 构建发送数据
+  const formData = new FormData()
+  formData.append('file', option.file)
+  formData.append('purpose', 'assistants')
+
+  // 推送基本内容
+  uploadFileList.value.push({
+    raw: option.file,
+    uid: option.file.uid,
+    progress: 0,
+  })
+
+  xhr.addEventListener('error', () => {
+    // 发送请求失败
+    const fileItem = findItemByUid(option.file.uid);
+    if (fileItem) {
+      fileItem.status = 'exception';
+    }
+  })
+
+  xhr.addEventListener('load', () => {
+    // 发送请求成功
+    if (xhr.status < 200 || xhr.status >= 300) {
+      // 上传失败
+      const fileItem = findItemByUid(option.file.uid);
+      if (fileItem) {
+        fileItem.status = 'exception';
+      }
+    }
+    // 上传成功
+    const fileItem = findItemByUid(option.file.uid);
+    if (fileItem) {
+      fileItem.status = 'success';
+      fileItem.progress = 100;
+      const response = getBody(xhr) as unknown as openaiFileResponseObject;
+      // todo: 两次请求开销，或本地缓存结果
+      fileItem.url = `${action}/${response.id}/content`
+    }
+  })
+
+  // 创建请求
+  xhr.open(option.method, action, true)
+
+  // 构建请求头
+  const headers = option.headers || {}
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+  } else {
+    for (const [key, value] of Object.entries(headers)) {
+      if (isNil(value)) continue
+      xhr.setRequestHeader(key, String(value))
+    }
+  }
+
+  xhr.send(formData)
+  return xhr
 }
 
 </script>
@@ -188,12 +279,15 @@ function removeUploadItem(index: number) {
           <el-upload
             ref="uploadRef"
             :accept="`.jpg, .jpeg, .png, .webp, .bmp`"
-            :http-request="UploadRequest"
+            :auto-upload="true"
+            :http-request="ajaxUpload"
             :limit="10"
             :multiple="true"
             :show-file-list="false"
             action="#"
+
             class="uploadMain"
+            method="post"
           >
             <el-button class="uploadBtn" link size="large" type="info">
               Select Files
@@ -307,9 +401,12 @@ function removeUploadItem(index: number) {
         max-width: 770px;
 
         flex-grow: 1;
-        flex-basis: 60px;
-        max-height: 120px;
+        flex-basis: 80px;
       }
+
+      //.filePreview:hover {
+      //  flex-basis: 120px;
+      //}
 
       .rowTools {
         display: flex;

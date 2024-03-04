@@ -78,3 +78,13 @@ interface openaiCompletionRequest extends openaiChatCompletionRequestParams {
     echo?: boolean | null;
     suffix?: string | null;
 }
+
+// /v1/files
+export interface openaiFileResponseObject {
+    id: string;
+    object: string;
+    bytes: number;
+    created_at?: number;
+    filename: string;
+    purpose: "fine-tune" | "fine-tune-results" | "assistants" | "assistants_output";
+}

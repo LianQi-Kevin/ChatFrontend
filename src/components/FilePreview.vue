@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 /* 创建文件展示列表 */
-import {CircleCloseFilled} from "@element-plus/icons-vue";
+import {CircleCloseFilled, Document, Film, Picture} from "@element-plus/icons-vue";
 
 export interface FilePreviewRaw {
   raw: File,
-  url: string;
+  uid: number,
+  url?: string,
+  progress?: number,
+  status?: 'success' | 'warning' | 'exception'
 }
 
 interface propsType {
@@ -30,18 +33,23 @@ const previewSrcList = computed(() => {
 
 <template>
   <div class="content">
-    <div v-for="({url, raw}, index) in props.fileList" class="fileBox">
+    <div v-for="({url, raw, progress, status}, index) in props.fileList" class="fileBox">
       <div class="fileCard">
         <el-image :infinite="false" :initial-index="index" :preview-src-list="previewSrcList" :src="url"
-                  class="viewIcon" fit="fill" loading="lazy"/>
+                  class="viewIcon" fit="contain" loading="lazy" v-if="raw.type.includes('image') && url"/>
+        <el-icon class="viewIcon" v-else-if="raw.type.includes('image') && url" size="33"><Picture /></el-icon>
+        <el-icon class="viewIcon" v-else-if="raw.type.includes('video')" size="33"><Film /></el-icon>
+        <el-icon class="viewIcon" v-else size="33"><Document /></el-icon>
         <div class="fileInfo">
           <el-text class="fileName" size="small" truncated>{{ raw.name }}</el-text>
-          <div class="fileInfo__main">
+          <div class="fileInfo__main" v-if="progress == 100 || !progress">
             <el-text class="fileInfo__type" size="small" type="info">{{ raw.type.split('/')[1].toUpperCase() }}
             </el-text>
             <el-text class="fileInfo__size" size="small" type="info">{{ (raw.size / (1024 * 1024)).toFixed(2) }} MB
             </el-text>
           </div>
+          <el-progress class="fileInfo__progress" v-else :percentage="progress" striped striped-flow duration="5"
+                       :status="status" />
         </div>
         <el-button v-if="props.showRemove" class="removeItem" link @click="emit('removeBtnClick', index)">
           <el-icon size="14">
@@ -66,6 +74,19 @@ const previewSrcList = computed(() => {
 
   overflow-y: auto;
   overflow-x: hidden;
+
+  .fileBox {
+    flex-basis: 150px;
+    flex-grow: 1;
+    max-width: 200px;
+  }
+
+  @media screen and (max-width: 550px) {
+    .fileBox {
+      max-width: 300px;
+    }
+  }
+
 
   .fileCard {
     max-height: 50px;
@@ -93,7 +114,7 @@ const previewSrcList = computed(() => {
 
     .fileInfo {
       max-width: 130px;
-      min-width: 100px;
+      width: 100%;
 
       display: flex;
       flex-direction: column;
@@ -107,6 +128,15 @@ const previewSrcList = computed(() => {
         display: flex;
         flex-direction: row;
         gap: 10px;
+      }
+
+      .fileInfo__progress{
+          width: 100%;
+
+        :deep(.el-progress__text) {
+          min-width: unset;
+          font-size: 12px!important;
+        }
       }
     }
 
