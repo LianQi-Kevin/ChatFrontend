@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 /* 创建文件展示列表 */
-import {CircleCloseFilled, Document, Film, Picture} from "@element-plus/icons-vue";
+import {CircleCloseFilled, Document, Film} from "@element-plus/icons-vue";
 
 export interface FilePreviewRaw {
   raw: File,
   uid: number,
   url?: string,
+  b64?: string,
   progress?: number,
   status?: 'success' | 'warning' | 'exception'
 }
@@ -26,29 +27,30 @@ const emit = defineEmits<{
 }>();
 
 const previewSrcList = computed(() => {
-  return props.fileList.map((item) => item.url);
+  return props.fileList.map((item) => item.b64);
 });
 
 </script>
 
 <template>
   <div class="content">
-    <div v-for="({url, raw, progress, status}, index) in props.fileList" class="fileBox">
+    <div v-for="({raw, progress, status, b64}, index) in props.fileList" class="fileBox">
       <div class="fileCard">
-        <el-image :infinite="false" :initial-index="index" :preview-src-list="previewSrcList" :src="url"
-                  class="viewIcon" fit="contain" loading="lazy" v-if="raw.type.includes('image') && url"/>
-        <el-icon class="viewIcon" v-else-if="raw.type.includes('image') && url" size="33"><Picture /></el-icon>
+        <el-image :infinite="false" :initial-index="index" :preview-src-list="previewSrcList" :src="b64"
+                  class="viewIcon" fit="contain" loading="lazy" v-if="raw.type.includes('image')"/>
         <el-icon class="viewIcon" v-else-if="raw.type.includes('video')" size="33"><Film /></el-icon>
         <el-icon class="viewIcon" v-else size="33"><Document /></el-icon>
         <div class="fileInfo">
           <el-text class="fileName" size="small" truncated>{{ raw.name }}</el-text>
           <div class="fileInfo__main" v-if="progress == 100 || !progress">
-            <el-text class="fileInfo__type" size="small" type="info">{{ raw.type.split('/')[1].toUpperCase() }}
+            <el-text class="fileInfo__type" size="small" type="info">
+              {{ raw.name.split('.')[raw.name.split('.').length - 1].toUpperCase() }}
             </el-text>
-            <el-text class="fileInfo__size" size="small" type="info">{{ (raw.size / (1024 * 1024)).toFixed(2) }} MB
+            <el-text class="fileInfo__size" size="small" type="info">
+              {{ (raw.size / (1024 * 1024)).toFixed(2) }} MB
             </el-text>
           </div>
-          <el-progress class="fileInfo__progress" v-else :percentage="progress" striped striped-flow duration="5"
+          <el-progress class="fileInfo__progress" v-else :percentage="progress" striped striped-flow :duration="5"
                        :status="status" />
         </div>
         <el-button v-if="props.showRemove" class="removeItem" link @click="emit('removeBtnClick', index)">

@@ -13,6 +13,7 @@ import type {UploadInstance, UploadProgressEvent, UploadRequestOptions} from "el
 import {useThrottleFn} from '@vueuse/core'
 import {convertUnixTimeToFormattedTime, getCurrentFormattedTime} from "@/tools/nowTime";
 import {isNil} from "lodash-es";
+import {getBase64} from "@/tools/base64";
 
 const modelName = ref<string>('');
 const modelList = reactive<{ label: string; value: string }[]>([])
@@ -24,10 +25,17 @@ const baseURL = "https://u23218-bcf9-65e4e0f6.westx.seetacloud.com:8443/"
 // 获取模型列表
 onMounted(() => {
   nextTick(async () => {
-    (await listModels(baseURL)).map(item => {
-      modelList.push({label: item.split('/')[1], value: item})
-    })
-    modelName.value = modelList[0]?.value
+    try {
+      (await listModels(baseURL)).map(item => {
+        modelList.push({label: item.split('/')[1], value: item})
+      })
+      modelName.value = modelList[0]?.value
+    } catch (error) {
+      ElMessage({
+        message: 'Failed to get model list, Please check API URL',
+        type: 'error'
+      })
+    }
   })
 });
 
@@ -51,7 +59,7 @@ const messagesList = ref<ChatMessagesList[]>([]);
 
 function handleEnterKey(event: KeyboardEvent) {
   // 支持 ctrl + enter 换行
-  if (event.ctrlKey && event.target instanceof HTMLTextAreaElement) {
+  if ((event.ctrlKey || event.shiftKey) && event.target instanceof HTMLTextAreaElement) {
     // 在当前光标位置插入一个新行字符
     const start = event.target.selectionStart;
     const end = event.target.selectionEnd;
@@ -74,10 +82,9 @@ function handleEnterKey(event: KeyboardEvent) {
 async function createMessageContent(query: string, fileList?: FilePreviewRaw[]): Promise<
   string | openaiChatCompletionRequestMessagesContent[]
 > {
-  // todo: support more file types
   if (fileList && fileList.length) {
     const imageList: openaiChatCompletionRequestMessagesContent[] = []
-    // add img_b64
+    // filter and add img files
     fileList.map(file => {
       if (file.raw.type.includes('image') && file.url) {
         return imageList.push({type: "image_url", image_url: {url: file.url}})
@@ -175,7 +182,7 @@ function getBody(xhr: XMLHttpRequest): XMLHttpRequestResponseType {
   }
 }
 
-function ajaxUpload(option: UploadRequestOptions): XMLHttpRequest {
+async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest> {
   const xhr = new XMLHttpRequest();
   const action: string = `${baseURL}v1/files` // 请求URL
 
@@ -201,6 +208,7 @@ function ajaxUpload(option: UploadRequestOptions): XMLHttpRequest {
   uploadFileList.value.push({
     raw: option.file,
     uid: option.file.uid,
+    b64: (option.file.type.includes('image')) ? await getBase64(option.file) : undefined,
     progress: 0,
   })
 
@@ -227,7 +235,6 @@ function ajaxUpload(option: UploadRequestOptions): XMLHttpRequest {
       fileItem.status = 'success';
       fileItem.progress = 100;
       const response = getBody(xhr) as unknown as openaiFileResponseObject;
-      // todo: 两次请求开销，或本地缓存结果
       fileItem.url = `${action}/${response.id}/content`
     }
   })
@@ -306,7 +313,7 @@ function ajaxUpload(option: UploadRequestOptions): XMLHttpRequest {
         <div class="rowInput">
           <el-input v-model="inputValue" :autosize="{ minRows: 1, maxRows: 6 }" class="inputText"
                     maxlength="4000" placeholder="Please type here" show-word-limit
-                    type="textarea" @keyup.enter.native="handleEnterKey"
+                    type="textarea" @keyup.enter.native="handleEnterKey" autofocus
           />
           <el-button :disabled="!(inputValue.length > 0) || submitLoading" class="submitBtn" @click="submitMessage">
             <el-icon>
