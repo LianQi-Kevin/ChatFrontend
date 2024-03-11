@@ -12,7 +12,7 @@ export default class DB {
     }
 
     async setItem(key: string, value: any) {
-        return await this.db.setItem(key, JSON.stringify(value));
+        return await this.db.setItem(key, value);
     }
 
     async getItem(key: string) {

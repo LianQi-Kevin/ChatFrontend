@@ -1,71 +1,129 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import DB from "@/tools/db";
+import type {openaiChatCompletionRequestParams} from "@/types/OpenaiAPI";
+import type {FormInstance, FormRules} from "element-plus";
+import {listModels} from "@/network/OpenaiApi";
 
-const OpenaiAPI = new DB("ApiKeys", "Openai");
+const OpenaiAPI_DB = new DB("ApiKeys", "Openai");
 
-const props = defineProps<{
-  submitCallable?: Function
-}>()
+const display = defineModel('visible', {type: Boolean});
 
-const apiCredentials = reactive({
-  API_URL: "",
+interface PropsType {
+  title?: string,
+  submitCallable?: Function,
+}
+
+const props = withDefaults(defineProps<PropsType>(), {
+  title: "OpenAI API",
 });
 
-function saveConfig() {
+const emit = defineEmits<{
+  (e: 'onSubmit', apiConfigs: ApiConfigsType): void;
+}>();
+
+export type ApiConfigsType = Omit<openaiChatCompletionRequestParams,
+  "logprobs" | "n" | "seed" | "stop" | "user" | "presence_penalty" | "frequency_penalty"> & {
+  API_URL: string;
+  API_KEY?: string;
+};
+
+
+const apiConfigs = reactive<ApiConfigsType>({
+  API_URL: "",
+  API_KEY: "EMPTY",
+  max_tokens: 500,
+  temperature: 0.7,
+  top_p: 1,
+  stream: false,
+});
+
+const ruleFormRef = ref<FormInstance>()
+
+const rules = reactive<FormRules<ApiConfigsType>>({
+  API_URL: [{required: true, message: "API URL is required", trigger: "blur"}],
+  API_KEY: [{required: true, message: "API KEY is required", trigger: "blur"}],
+});
+
+
+async function beforeClose(formEl: FormInstance | undefined) {
+  if (!formEl) return // 非空
+  // verify the API_URL
+  try {
+    const models = await listModels(apiConfigs.API_URL)
+    ElMessage.success(`API verify Pass, Get model: ${models[0]}`);
+    await OpenaiAPI_DB.setItem("apiConfigs", toRaw(apiConfigs));
+    display.value = false;
+
+    // 保存时回调
+    emit("onSubmit", toRaw(apiConfigs));
+  } catch (err) {
+    if (!ruleFormRef.value) return // 非空
+    ruleFormRef.value.validateField("API_URL", () => {
+      ElMessage.error("Please type the API URL & API KEY");
+    });
+  }
 }
+
+
+onMounted(() => {
+  nextTick(() => {
+    OpenaiAPI_DB.getItem("apiConfigs").then((res) => {
+      if (res) {
+        // 对结果进行JSON序列化
+        Object.assign(apiConfigs, res);
+      }
+    });
+  });
+});
+
 </script>
 
 <template>
-  <div class="configContent" style="z-index: 99">
-    <div class="configMask" />
-    <el-card class="card-options">
-      <template #header>
-        <el-text class="card-header" size="large" tag="b">Configuration</el-text>
-      </template>
+  <el-dialog
+    :before-close="beforeClose"
+    :model-value="display"
+    :title="props.title"
+    align-center
+    width="70%"
+    :destroy-on-clos="true"
+    :close-delay="3"
+  >
+    <el-form :model="apiConfigs" label-position="left" label-width="auto" status-icon :rules="rules" ref="ruleFormRef">
+      <el-form-item label="API Url" label-width="75px" prop="API_URL">
+        <el-input v-model="apiConfigs.API_URL" clearable placeholder="API URL">
+          <template #append>/v1</template>
+        </el-input>
+      </el-form-item>
+      <el-form-item label="API Key" label-width="75px" prop="API_KEY">
+        <el-input v-model="apiConfigs.API_KEY" clearable placeholder="API KEY"/>
+      </el-form-item>
+      <el-collapse>
+        <el-collapse-item name="1" title="Advanced Configurations" >
+          <el-form-item label="Max Tokens" prop="max_tokens">
+            <el-slider v-model.number="apiConfigs.max_tokens" :max="2048" :min="1" :step="5" show-input/>
+          </el-form-item>
+          <el-form-item label="Temperature" prop="temperature">
+            <el-slider v-model.number="apiConfigs.temperature" :max="2" :min="0" :step="0.1" show-input/>
+          </el-form-item>
+          <el-form-item label="Top P" prop="top_p">
+            <el-slider v-model.number="apiConfigs.top_p" :max="1" :min="0" :step="0.1" show-input/>
+          </el-form-item>
+          <el-form-item label="Stream Chat" prop="stream">
+            <el-switch v-model.number="apiConfigs.stream" :disabled="true"/>
+          </el-form-item>
+        </el-collapse-item>
+      </el-collapse>
+    </el-form>
 
-      <div class="card-footer">
-        <el-button type="primary" @click="saveConfig()" size="large" class="submit-btn" plain >
-          Save and Submit
-        </el-button>
+    <template #footer>
+      <div style="width: 100%; display: flex; flex-direction: row; justify-content: flex-end;">
+        <el-button plain @click="display = false">Cancel</el-button>
+        <el-button plain type="primary" @click="beforeClose(ruleFormRef)">Save</el-button>
       </div>
-    </el-card>
-  </div>
+    </template>
+  </el-dialog>
 </template>
 
-<style scoped lang="scss">
-.configContent{
-  position: absolute;
-  transform: translate(-50%, -50%);
-  left: 50%;
-  top: 50%;
-  width: 450px;
-}
-
-.configMask {
-  width: 100vw;
-  height: 100vh;
-  z-index: -1;
-  position: absolute;
-  background: var(--el-mask-color);
-  transform: translate(-50%, -50%);
-  top: 50%;
-  left: 50%;
-}
-
-.card-options {
-  .card-header {
-      //font-size: 25px;
-      font-weight: bold;
-  }
-
-  .card-footer {
-    display: flex;
-    justify-content: center;
-
-    .submit-btn {
-      width: 100%;
-    }
-  }
-}
+<style lang="scss" scoped>
 
 </style>

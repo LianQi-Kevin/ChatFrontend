@@ -45,6 +45,7 @@ export async function createChatCompletion(
     url: string,
     messages: openaiChatCompletionRequestMessages[],
     model_name: string,
+    api_key?: string,
     additionalParams?: openaiChatCompletionRequestParams,
 ): Promise<openaiChatCompletionResponse> {
     /* Create a chat completion. */
@@ -60,6 +61,9 @@ export async function createChatCompletion(
                     messages: messages,
                     model: model_name,
                     ...additionalParams
+                },
+                headers: {
+                    Authorization: `Bearer ${api_key ? 'EMPTY' : api_key}`
                 }
             })
             const data: openaiChatCompletionResponse = response.data

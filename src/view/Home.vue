@@ -1,43 +1,75 @@
 <script lang="ts" setup>
 // import DB from '@/tools/db.ts';
 // import Config from "@/components/ConfigSpark.vue";
-import Config from "@/components/ConfigOpenai.vue";
+import ConfigOpenai from "@/components/ConfigOpenai.vue";
 import type {ChatCardProps} from "@/components/ChatCard.vue"
 import ChatCard from "@/components/ChatCard.vue"
 import type {FilePreviewRaw} from "@/components/FilePreview.vue";
 import FilePreview from "@/components/FilePreview.vue";
 import {DocumentAdd, Promotion, Refresh, Tools} from "@element-plus/icons-vue";
 import {createChatCompletion, listModels} from "@/network/OpenaiApi"
-import {openaiChatCompletionRequestMessagesContent, openaiFileResponseObject} from "@/types/OpenaiAPI";
+import {
+  openaiChatCompletionRequestMessagesContent,
+  openaiFileResponseObject
+} from "@/types/OpenaiAPI";
 import type {UploadInstance, UploadProgressEvent, UploadRequestOptions} from "element-plus";
 import {useThrottleFn} from '@vueuse/core'
 import {convertUnixTimeToFormattedTime, getCurrentFormattedTime} from "@/tools/nowTime";
 import {isNil} from "lodash-es";
 import {getBase64} from "@/tools/base64";
+import type {ApiConfigsType} from "@/components/ConfigOpenai.vue"
+import DB from "@/tools/db";
 
 const modelName = ref<string>('');
-const modelList = reactive<{ label: string; value: string }[]>([])
-const showConfig = ref<boolean>(false)
-
-// todo: move to a config component
-const baseURL = "https://u23218-bcf9-65e4e0f6.westx.seetacloud.com:8443/"
+const modelList = reactive<{ label: string; value: string }[]>([]);
+const showConfig = ref<boolean>(false);
+const apiConfigs = reactive<ApiConfigsType>({
+  API_URL: ""
+});
+const OpenaiAPI_DB = new DB("ApiKeys", "Openai");
 
 // 获取模型列表
 onMounted(() => {
   nextTick(async () => {
-    try {
-      (await listModels(baseURL)).map(item => {
-        modelList.push({label: item.split('/')[1], value: item})
-      })
-      modelName.value = modelList[0]?.value
-    } catch (error) {
-      ElMessage({
-        message: 'Failed to get model list, Please check API URL',
-        type: 'error'
-      })
+    // 检查数据库内是否存在已保存数据，更新全局变量
+    const api_config = await OpenaiAPI_DB.getItem("apiConfigs") as ApiConfigsType
+    if (!api_config) {
+      ElMessage.warning(
+        "Please type the API URL & API KEY"
+      )
+      showConfig.value = true
+    } else {
+      Object.assign(apiConfigs, api_config)
+
+      // 获取模型列表
+      if (apiConfigs) {
+        refreshModelList()
+      } else {
+        // 未获取到模型列表时，弹出配置框
+        showConfig.value = true
+      }
     }
-  })
+  });
 });
+
+function configOnSubmit(_apiConfigs: ApiConfigsType) {
+  // 更新全局变量
+  Object.assign(apiConfigs, _apiConfigs)
+  refreshModelList()
+}
+
+function refreshModelList() {
+  // 清空模型列表
+  modelList.length = 0
+
+  // 获取模型列表
+  listModels(apiConfigs.API_URL).then(models => {
+    models.map(item => {
+      modelList.push({label: item.split('/')[1], value: item})
+    })
+    modelName.value = modelList[0]?.value
+  })
+}
 
 // 滚动到底部
 onUpdated(useThrottleFn(() => {
@@ -129,8 +161,14 @@ async function submitMessage() {
 
   try {
     // 执行请求，使用不包含占位符的副本
-    const response = await createChatCompletion(baseURL, messagesWithoutPlaceholder, modelName.value, {stream: false});
-
+    const { API_URL, API_KEY, ...openaiParams } = apiConfigs;
+    const response = await createChatCompletion(
+      API_URL,
+      messagesWithoutPlaceholder,
+      modelName.value,
+      API_KEY,
+      openaiParams
+    );
     let placeholder = messagesList.value[placeholderIndex];
     placeholder.loading = false;
 
@@ -184,7 +222,11 @@ function getBody(xhr: XMLHttpRequest): XMLHttpRequestResponseType {
 
 async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest> {
   const xhr = new XMLHttpRequest();
-  const action: string = `${baseURL}v1/files` // 请求URL
+
+  const url = new URL(apiConfigs.API_URL)
+  url.pathname = "/v1/files"
+
+  const action: string = url.toString() // 请求URL
 
   if (xhr.upload) {
     xhr.upload.addEventListener('progress', (evt: ProgressEvent) => {
@@ -256,18 +298,17 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
   xhr.send(formData)
   return xhr
 }
-
 </script>
 
 <template>
   <div class="content">
-    <Config v-if="showConfig"/>
+    <ConfigOpenai v-model:visible="showConfig" @onSubmit="configOnSubmit" />
     <div class="main">
       <div class="header">
         <el-select v-model="modelName" placeholder="Model" style="max-width: 300px">
           <el-option v-for="item in modelList" :key="item.label" :label="item.label" :value="item.value"/>
         </el-select>
-        <el-button @click="() => {showConfig = true}">
+        <el-button @click="showConfig = true">
           <el-icon>
             <Tools style="transform: scale(1.2);"/>
           </el-icon>
