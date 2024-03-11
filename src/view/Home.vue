@@ -6,7 +6,7 @@ import type {ChatCardProps} from "@/components/ChatCard.vue"
 import ChatCard from "@/components/ChatCard.vue"
 import type {FilePreviewRaw} from "@/components/FilePreview.vue";
 import FilePreview from "@/components/FilePreview.vue";
-import {DocumentAdd, Promotion, Refresh, Share} from "@element-plus/icons-vue";
+import {DocumentAdd, Promotion, Refresh, Tools} from "@element-plus/icons-vue";
 import {createChatCompletion, listModels} from "@/network/OpenaiApi"
 import {openaiChatCompletionRequestMessagesContent, openaiFileResponseObject} from "@/types/OpenaiAPI";
 import type {UploadInstance, UploadProgressEvent, UploadRequestOptions} from "element-plus";
@@ -58,6 +58,7 @@ interface ChatMessagesList extends ChatCardProps {
 const messagesList = ref<ChatMessagesList[]>([]);
 
 function handleEnterKey(event: KeyboardEvent) {
+  // todo: 或重建 el-input 以控制 enter 动作
   // 支持 ctrl + enter 换行
   if ((event.ctrlKey || event.shiftKey) && event.target instanceof HTMLTextAreaElement) {
     // 在当前光标位置插入一个新行字符
@@ -137,7 +138,6 @@ async function submitMessage() {
     placeholder.time = convertUnixTimeToFormattedTime(response?.created)
     placeholder.content = responseText ?? "Error: No response";
     placeholder.text = responseText ?? "Error: No response";
-
   } catch (error) {
     console.error("Error submitting message:", error);
     // 错误处理，可以选择更新占位符显示错误信息或移除占位符
@@ -264,12 +264,12 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
     <Config v-if="showConfig"/>
     <div class="main">
       <div class="header">
-        <el-select v-model="modelName" placeholder="Model">
+        <el-select v-model="modelName" placeholder="Model" style="max-width: 300px">
           <el-option v-for="item in modelList" :key="item.label" :label="item.label" :value="item.value"/>
         </el-select>
-        <el-button disabled>
+        <el-button @click="() => {showConfig = true}">
           <el-icon>
-            <Share style="transform: scale(1.2);"/>
+            <Tools style="transform: scale(1.2);"/>
           </el-icon>
         </el-button>
       </div>

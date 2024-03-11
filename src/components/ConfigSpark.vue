@@ -2,7 +2,7 @@
 import DB from "@/tools/db.ts";
 import { nanoid } from 'nanoid';
 
-const SparkDB = new DB(import.meta.env.VITE_DB_NAME, import.meta.env.VITE_DB_STORE_NAME);
+const SparkDB = new DB("ApiKeys", "Spark");
 
 const props = defineProps({
   submitCallable: {
@@ -33,27 +33,27 @@ const APIOptions = [
   {
     value: 'V1.5',
     label: 'Version 1.5',
-    APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V1,
-    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V1
+    APIDomain: "general",
+    APIUrl: "wss://spark-api.xf-yun.com/v1.1/chat"
   },
   {
     value: 'V2.0',
     label: 'Version 2.0',
-    APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V2,
-    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V2,
+    APIDomain: "generalv2",
+    APIUrl: "wss://spark-api.xf-yun.com/v2.1/chat",
     disabled: true
   },
   {
     value: 'V3.0',
     label: 'Version 3.0',
-    APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3,
-    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3
+    APIDomain: "generalv3",
+    APIUrl: "wss://spark-api.xf-yun.com/v3.1/chat"
   },
   {
     value: 'V3.5',
     label: 'Version 3.5',
-    APIDomain: import.meta.env.VITE_XINGHUO_DOMAIN_V3_5,
-    APIUrl: import.meta.env.VITE_XINGHUO_SPEAKER_API_V3_5
+    APIDomain: "generalv3.5",
+    APIUrl: "wss://spark-api.xf-yun.com/v3.5/chat"
   }
 ];
 

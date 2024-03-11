@@ -18,8 +18,8 @@
 
     ```shell
     $env:ELECTRON_GET_USE_PROXY=1
-    $env:GLOBAL_AGENT_HTTP_PROXY=http://127.0.0.1:52539
-    $env:GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:52539
+    $env:GLOBAL_AGENT_HTTP_PROXY='http://127.0.0.1:52539'
+    $env:GLOBAL_AGENT_HTTPS_PROXY='http://127.0.0.1:52539'
     ```
 
 2. 安装 electron 和 electron-builder

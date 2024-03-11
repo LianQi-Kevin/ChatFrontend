@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import DB from "@/tools/db";
+
+const OpenaiAPI = new DB("ApiKeys", "Openai");
 
 const props = defineProps<{
   submitCallable?: Function
