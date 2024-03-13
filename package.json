@@ -1,5 +1,5 @@
 {
-  "name": "xinghuochat",
+  "name": "chat-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,7 @@
   "description": "The conversation application with XingHuo LLM.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LianQi-Kevin/QRcodeCreater"
+    "url": "https://github.com/LianQi-Kevin/ChatFrontend"
   },
   "license": "APACHE-2.0",
   "scripts": {
@@ -23,13 +23,12 @@
     "electron:postinstall": "electron-builder install-app-deps"
   },
   "build": {
-    "productName": "xinghuochat",
-    "appId": "cn.lianqidev.xinghuochat",
+    "productName": "chat-frontend",
+    "appId": "cn.lianqidev.chat-frontend",
     "directories": {
       "output": "build"
     },
     "win": {
-      "icon": "public/favicon.ico",
       "target": [
         "portable"
       ],
@@ -37,6 +36,7 @@
     },
     "compression": "maximum",
     "files": [
+      "dist-electron/**/*",
       "dist/**/*",
       "!node_modules"
     ]
