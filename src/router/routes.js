@@ -8,7 +8,7 @@ const routes = [
         component: Home,    // 首页不启用lazyLoad
         meta: {
             verifyAPIConfig: true,      // 校验API配置 ( 非必要, 默认false )
-            title: 'Home'   // 页面标题 ( 非必要 )
+            title: 'ChatFrontend'   // 页面标题 ( 非必要 )
         }
     },
     {

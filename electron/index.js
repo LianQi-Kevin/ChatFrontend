@@ -1,5 +1,4 @@
-import { app, BrowserWindow } from 'electron';
-// import {  Menu } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 
 function createWindow() {
     process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = "true"
@@ -21,6 +20,7 @@ function createWindow() {
         win.webContents.openDevTools({mode:'right'})
     } else {
         // Load your file
+        Menu.setApplicationMenu(null)
         win.loadFile('dist/index.html').then(() => {
             console.debug('loadFile success')
         });

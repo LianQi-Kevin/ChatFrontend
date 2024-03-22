@@ -6,7 +6,7 @@ import type {ChatCardProps} from "@/components/ChatCard.vue"
 import ChatCard from "@/components/ChatCard.vue"
 import type {FilePreviewRaw} from "@/components/FilePreview.vue";
 import FilePreview from "@/components/FilePreview.vue";
-import {DocumentAdd, Promotion, Refresh, Tools} from "@element-plus/icons-vue";
+import {DocumentAdd, Loading, Promotion, Refresh, Tools} from "@element-plus/icons-vue";
 import {createChatCompletion, listModels} from "@/network/OpenaiApi"
 import {
   openaiChatCompletionRequestMessagesContent,
@@ -24,7 +24,8 @@ const modelName = ref<string>('');
 const modelList = reactive<{ label: string; value: string }[]>([]);
 const showConfig = ref<boolean>(false);
 const apiConfigs = reactive<ApiConfigsType>({
-  API_URL: ""
+  API_URL: "",
+  displayModels: true
 });
 const OpenaiAPI_DB = new DB("ApiKeys", "Openai");
 
@@ -80,7 +81,7 @@ onUpdated(useThrottleFn(() => {
 }, 3000));
 
 // to PromptArea.vue
-const inputValue = ref<string>('what in this picture?');
+const inputValue = ref<string>('');
 const submitLoading = ref<boolean>(false);
 
 interface ChatMessagesList extends ChatCardProps {
@@ -198,8 +199,9 @@ function refreshMessages() {
 const uploadRef = ref<UploadInstance>()
 const uploadFileList = ref<FilePreviewRaw[]>([])
 
-function removeUploadItem(index: number) {
+function removeUploadItem(index: number, xhr?: XMLHttpRequest) {
   uploadFileList.value.splice(index, 1)
+  xhr?.abort()
 }
 
 function findItemByUid(uid: number) {
@@ -221,6 +223,10 @@ function getBody(xhr: XMLHttpRequest): XMLHttpRequestResponseType {
 }
 
 async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest> {
+  // 锁定 submit btn 状态
+  submitLoading.value = true
+
+  // 构建请求
   const xhr = new XMLHttpRequest();
 
   const url = new URL(apiConfigs.API_URL)
@@ -252,6 +258,7 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
     uid: option.file.uid,
     b64: (option.file.type.includes('image')) ? await getBase64(option.file) : undefined,
     progress: 0,
+    xhr: xhr
   })
 
   xhr.addEventListener('error', () => {
@@ -281,6 +288,11 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
     }
   })
 
+  xhr.addEventListener('loadend', () => {
+    // 解锁 submit btn 状态
+    submitLoading.value = false
+  })
+
   // 创建请求
   xhr.open(option.method, action, true)
 
@@ -305,12 +317,13 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
     <ConfigOpenai v-model:visible="showConfig" @onSubmit="configOnSubmit" />
     <div class="main">
       <div class="header">
-        <el-select v-model="modelName" placeholder="Model" style="max-width: 300px">
+        <el-select v-model="modelName" placeholder="Model" style="max-width: 300px" v-if="apiConfigs.displayModels">
           <el-option v-for="item in modelList" :key="item.label" :label="item.label" :value="item.value"/>
         </el-select>
+        <div v-else/>
         <el-button @click="showConfig = true">
-          <el-icon>
-            <Tools style="transform: scale(1.2);"/>
+          <el-icon size="16">
+            <Tools />
           </el-icon>
         </el-button>
       </div>
@@ -352,13 +365,16 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
           </el-button>
         </div>
         <div class="rowInput">
-          <el-input v-model="inputValue" :autosize="{ minRows: 1, maxRows: 6 }" class="inputText"
-                    maxlength="4000" placeholder="Please type here" show-word-limit
+          <el-input v-model="inputValue" :autosize="{ minRows: 1, maxRows: 8 }" class="inputText"
+                    maxlength="4000" placeholder="Please type here"
                     type="textarea" @keyup.enter.native="handleEnterKey" autofocus
           />
           <el-button :disabled="!(inputValue.length > 0) || submitLoading" class="submitBtn" @click="submitMessage">
-            <el-icon>
-              <Promotion style="transform: scale(1.3);"/>
+            <el-icon size="17" v-show="!submitLoading">
+              <Promotion />
+            </el-icon>
+            <el-icon class="is-loading" size="17" v-show="submitLoading">
+              <Loading />
             </el-icon>
           </el-button>
         </div>
@@ -451,10 +467,6 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
         flex-grow: 1;
         flex-basis: 80px;
       }
-
-      //.filePreview:hover {
-      //  flex-basis: 120px;
-      //}
 
       .rowTools {
         display: flex;

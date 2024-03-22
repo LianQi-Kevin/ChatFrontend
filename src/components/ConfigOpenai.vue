@@ -25,6 +25,7 @@ export type ApiConfigsType = Omit<openaiChatCompletionRequestParams,
   "logprobs" | "n" | "seed" | "stop" | "user" | "presence_penalty" | "frequency_penalty"> & {
   API_URL: string;
   API_KEY?: string;
+  displayModels?: Boolean;
 };
 
 
@@ -35,6 +36,7 @@ const apiConfigs = reactive<ApiConfigsType>({
   temperature: 0.7,
   top_p: 1,
   stream: false,
+  displayModels: true,
 });
 
 const ruleFormRef = ref<FormInstance>()
@@ -110,6 +112,11 @@ onMounted(() => {
           </el-form-item>
           <el-form-item label="Stream Chat" prop="stream">
             <el-switch v-model.number="apiConfigs.stream" :disabled="true"/>
+          </el-form-item>
+        </el-collapse-item>
+        <el-collapse-item name="2" title="Page Configurations">
+          <el-form-item label="Display Models" prop="displayModels">
+            <el-switch v-model.number="apiConfigs.displayModels" />
           </el-form-item>
         </el-collapse-item>
       </el-collapse>

@@ -66,7 +66,7 @@ const showSystemLine = ref<number>(1)
           </el-text>
         </div>
         <div v-if="props.loading" id="chat__loading" style="margin-top: 10px; margin-left: 5px;width: 20px"/>
-        <FilePreview v-if="props.fileList && props.fileList.length && !props.requestError" :file-list="props.fileList"/>
+        <FilePreview v-if="props.fileList && props.fileList.length && !props.requestError" :file-list="props.fileList" :in-chat="true"/>
         <MarkdownRenderer v-if="!props.loading && !props.requestError" :content="props.text" :role="props.role"/>
 
         <div v-if="props.requestError">
