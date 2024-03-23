@@ -1,24 +1,16 @@
 <script lang="ts" setup>
-// import DB from '@/tools/db.ts';
-// import Config from "@/components/ConfigSpark.vue";
-import ConfigOpenai from "@/components/ConfigOpenai.vue";
-import type {ChatCardProps} from "@/components/ChatCard.vue"
-import ChatCard from "@/components/ChatCard.vue"
-import type {FilePreviewRaw} from "@/components/FilePreview.vue";
-import FilePreview from "@/components/FilePreview.vue";
-import {DocumentAdd, Loading, Promotion, Refresh, Tools} from "@element-plus/icons-vue";
-import {createChatCompletion, listModels} from "@/network/OpenaiApi"
-import {
-  openaiChatCompletionRequestMessagesContent,
-  openaiFileResponseObject
-} from "@/types/OpenaiAPI";
-import type {UploadInstance, UploadProgressEvent, UploadRequestOptions} from "element-plus";
-import {useThrottleFn} from '@vueuse/core'
-import {convertUnixTimeToFormattedTime, getCurrentFormattedTime} from "@/tools/nowTime";
-import {isNil} from "lodash-es";
-import {getBase64} from "@/tools/base64";
+import {Tools} from "@element-plus/icons-vue";
+
 import type {ApiConfigsType} from "@/components/ConfigOpenai.vue"
+import ConfigOpenai from "@/components/ConfigOpenai.vue";
+import ChatCard from "@/components/ChatCard.vue"
+import InputArea from "@/components/InputArea.vue";
+import type {FilePreviewRaw} from "@/components/FilePreview.vue";
+import type {ChatMessagesList} from "@/types/ChatComponents";
+
+import {listModels} from "@/network/OpenaiApi"
 import DB from "@/tools/db";
+
 
 const modelName = ref<string>('');
 const modelList = reactive<{ label: string; value: string }[]>([]);
@@ -72,258 +64,38 @@ function refreshModelList() {
   })
 }
 
-// 滚动到底部
-onUpdated(useThrottleFn(() => {
+
+// PromptArea
+const inputValue = ref<string>('');
+const messagesList = ref<ChatMessagesList[]>([]);
+const uploadFileList = ref<FilePreviewRaw[]>([])
+
+// messagesList 更新时滚动页面到底部
+watch(messagesList, () => {
   const chatCard = document.querySelector('.conversations')
   if (chatCard) {
     chatCard.scrollTop = chatCard.scrollHeight
   }
-}, 3000));
+}, {deep: true, flush: 'post'})
 
-// to PromptArea.vue
-const inputValue = ref<string>('');
-const submitLoading = ref<boolean>(false);
-
-interface ChatMessagesList extends ChatCardProps {
-  content: string | openaiChatCompletionRequestMessagesContent[];
-}
-
-const messagesList = ref<ChatMessagesList[]>([]);
-
-function handleEnterKey(event: KeyboardEvent) {
-  // todo: 或重建 el-input 以控制 enter 动作
-  // 支持 ctrl + enter 换行
-  if ((event.ctrlKey || event.shiftKey) && event.target instanceof HTMLTextAreaElement) {
-    // 在当前光标位置插入一个新行字符
-    const start = event.target.selectionStart;
-    const end = event.target.selectionEnd;
-    inputValue.value = inputValue.value.substring(0, start) + "\n" + inputValue.value.substring(end);
-    // 将光标移动到插入的新行字符之后
-    setTimeout(() => {
-      if (event.target instanceof HTMLTextAreaElement) {
-        event.target.selectionStart = event.target.selectionEnd = start + 1;
-      }
-    }, 0);
-  } else {
-    // 输入内容非空或全为\n
-    if (inputValue.value.trim() !== '' && !inputValue.value.match(/^\n+$/)) {
-      submitMessage()
-    }
-  }
-}
-
-
-async function createMessageContent(query: string, fileList?: FilePreviewRaw[]): Promise<
-  string | openaiChatCompletionRequestMessagesContent[]
-> {
-  if (fileList && fileList.length) {
-    const imageList: openaiChatCompletionRequestMessagesContent[] = []
-    // filter and add img files
-    fileList.map(file => {
-      if (file.raw.type.includes('image') && file.url) {
-        return imageList.push({type: "image_url", image_url: {url: file.url}})
-      }
-    })
-    // add text
-    imageList.push({type: "text", text: query})
-    return imageList
-  }
-  return query
-}
-
-
-async function submitMessage() {
-  // 组装 content 并推送到 messagesList
-  const content = await createMessageContent(inputValue.value, uploadFileList.value)
-  console.debug(`content: `, content)
-  messagesList.value.push({
-    role: 'user',
-    content: content,
-    text: inputValue.value,
-    fileList: [...uploadFileList.value],
-    time: getCurrentFormattedTime()
-  })
-
-  // 清理
-  uploadFileList.value.length = 0
-  uploadRef.value?.clearFiles()
-  inputValue.value = ''
-
-  // 开始请求
-  submitLoading.value = true
-
-  // clone messagesList
-  const messagesWithoutPlaceholder = messagesList.value.map(({role, content}) => {
-    return {role: role, content: content}
-  });
-
-  // 添加占位符到 messagesList
-  const placeholderIndex = messagesList.value.push({content: '', role: 'assistant', loading: true, text: ""}) - 1;
-
-  try {
-    // 执行请求，使用不包含占位符的副本
-    const { API_URL, API_KEY, ...openaiParams } = apiConfigs;
-    const response = await createChatCompletion(
-      API_URL,
-      messagesWithoutPlaceholder,
-      modelName.value,
-      API_KEY,
-      openaiParams
-    );
-    let placeholder = messagesList.value[placeholderIndex];
-    placeholder.loading = false;
-
-    const responseText = response?.choices[0]?.message?.content;
-    placeholder.time = convertUnixTimeToFormattedTime(response?.created)
-    placeholder.content = responseText ?? "Error: No response";
-    placeholder.text = responseText ?? "Error: No response";
-  } catch (error) {
-    console.error("Error submitting message:", error);
-    // 错误处理，可以选择更新占位符显示错误信息或移除占位符
-    messagesList.value[placeholderIndex].loading = false
-    messagesList.value[placeholderIndex].requestError = true
-  } finally {
-    // 无论成功还是失败，都需要停止加载状态
-    submitLoading.value = false;
-  }
-}
-
-function refreshMessages() {
-  messagesList.value.length = messagesList.value[0]?.role === 'system' ? 1 : 0
-  uploadFileList.value.length = 0
-  uploadRef.value?.clearFiles()
-}
-
-
-// to UploadBtn.vue
-const uploadRef = ref<UploadInstance>()
-const uploadFileList = ref<FilePreviewRaw[]>([])
-
-function removeUploadItem(index: number, xhr?: XMLHttpRequest) {
-  uploadFileList.value.splice(index, 1)
-  xhr?.abort()
-}
-
-function findItemByUid(uid: number) {
-  return uploadFileList.value.find(item => item.uid === uid);
-}
-
-
-function getBody(xhr: XMLHttpRequest): XMLHttpRequestResponseType {
-  const text = xhr.responseText || xhr.response
-  if (!text) {
-    return text
-  }
-
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
-  }
-}
-
-async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest> {
-  // 锁定 submit btn 状态
-  submitLoading.value = true
-
-  // 构建请求
-  const xhr = new XMLHttpRequest();
-
-  const url = new URL(apiConfigs.API_URL)
-  url.pathname = "/v1/files"
-
-  const action: string = url.toString() // 请求URL
-
-  if (xhr.upload) {
-    xhr.upload.addEventListener('progress', (evt: ProgressEvent) => {
-      const progressEvt = evt as UploadProgressEvent
-      progressEvt.percent = evt.total > 0 ? (evt.loaded / evt.total) * 100 : 0
-      console.debug('progressEvt:', progressEvt)
-      const fileItem = findItemByUid(option.file.uid);
-      if (fileItem) {
-        // 更新该文件的上传进度
-        fileItem.progress = Math.trunc(progressEvt.percent);
-      }
-    })
-  }
-
-  // 构建发送数据
-  const formData = new FormData()
-  formData.append('file', option.file)
-  formData.append('purpose', 'assistants')
-
-  // 推送基本内容
-  uploadFileList.value.push({
-    raw: option.file,
-    uid: option.file.uid,
-    b64: (option.file.type.includes('image')) ? await getBase64(option.file) : undefined,
-    progress: 0,
-    xhr: xhr
-  })
-
-  xhr.addEventListener('error', () => {
-    // 发送请求失败
-    const fileItem = findItemByUid(option.file.uid);
-    if (fileItem) {
-      fileItem.status = 'exception';
-    }
-  })
-
-  xhr.addEventListener('load', () => {
-    // 发送请求成功
-    if (xhr.status < 200 || xhr.status >= 300) {
-      // 上传失败
-      const fileItem = findItemByUid(option.file.uid);
-      if (fileItem) {
-        fileItem.status = 'exception';
-      }
-    }
-    // 上传成功
-    const fileItem = findItemByUid(option.file.uid);
-    if (fileItem) {
-      fileItem.status = 'success';
-      fileItem.progress = 100;
-      const response = getBody(xhr) as unknown as openaiFileResponseObject;
-      fileItem.url = `${action}/${response.id}/content`
-    }
-  })
-
-  xhr.addEventListener('loadend', () => {
-    // 解锁 submit btn 状态
-    submitLoading.value = false
-  })
-
-  // 创建请求
-  xhr.open(option.method, action, true)
-
-  // 构建请求头
-  const headers = option.headers || {}
-  if (headers instanceof Headers) {
-    headers.forEach((value, key) => xhr.setRequestHeader(key, value))
-  } else {
-    for (const [key, value] of Object.entries(headers)) {
-      if (isNil(value)) continue
-      xhr.setRequestHeader(key, String(value))
-    }
-  }
-
-  xhr.send(formData)
-  return xhr
-}
 </script>
 
 <template>
   <div class="content">
-    <ConfigOpenai v-model:visible="showConfig" @onSubmit="configOnSubmit" />
+    <ConfigOpenai v-model:visible="showConfig" @onSubmit="configOnSubmit"/>
     <div class="main">
       <div class="header">
-        <el-select v-model="modelName" placeholder="Model" style="max-width: 300px" v-if="apiConfigs.displayModels">
+        <el-select v-if="apiConfigs.displayModels && modelList.length > 1" v-model="modelName" placeholder="Model"
+                   style="max-width: 300px">
           <el-option v-for="item in modelList" :key="item.label" :label="item.label" :value="item.value"/>
         </el-select>
+        <el-text v-else-if="apiConfigs.displayModels && modelList.length == 1" class="modelName" size="large">
+          {{ modelList[0]?.label }}
+        </el-text>
         <div v-else/>
         <el-button @click="showConfig = true">
           <el-icon size="16">
-            <Tools />
+            <Tools/>
           </el-icon>
         </el-button>
       </div>
@@ -334,50 +106,13 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
         </template>
       </div>
       <div class="inputArea">
-        <FilePreview v-if="uploadFileList.length" :file-list="uploadFileList" class="filePreview"
-                     show-remove @removeBtnClick="removeUploadItem"/>
-        <div class="rowTools">
-          <el-upload
-            ref="uploadRef"
-            :accept="`.jpg, .jpeg, .png, .webp, .bmp`"
-            :auto-upload="true"
-            :http-request="ajaxUpload"
-            :limit="10"
-            :multiple="true"
-            :show-file-list="false"
-            action="#"
-
-            class="uploadMain"
-            method="post"
-          >
-            <el-button class="uploadBtn" link size="large" type="info">
-              Select Files
-              <el-icon style="margin-left: 5px">
-                <DocumentAdd style="transform: scale(1.2);"/>
-              </el-icon>
-            </el-button>
-          </el-upload>
-          <el-button class="refreshBtn" link size="large" type="info" @click="refreshMessages">
-            New Chat
-            <el-icon style="margin-left: 5px">
-              <Refresh style="transform: scale(1.2);"/>
-            </el-icon>
-          </el-button>
-        </div>
-        <div class="rowInput">
-          <el-input v-model="inputValue" :autosize="{ minRows: 1, maxRows: 8 }" class="inputText"
-                    maxlength="4000" placeholder="Please type here"
-                    type="textarea" @keyup.enter.native="handleEnterKey" autofocus
-          />
-          <el-button :disabled="!(inputValue.length > 0) || submitLoading" class="submitBtn" @click="submitMessage">
-            <el-icon size="17" v-show="!submitLoading">
-              <Promotion />
-            </el-icon>
-            <el-icon class="is-loading" size="17" v-show="submitLoading">
-              <Loading />
-            </el-icon>
-          </el-button>
-        </div>
+        <InputArea
+          v-model:input-value="inputValue"
+          v-model:messages-list="messagesList"
+          v-model:upload-file-list="uploadFileList"
+          :api_config="apiConfigs"
+          :model-name="modelName"
+        />
       </div>
     </div>
   </div>
@@ -418,7 +153,7 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
     flex-grow: 1;
 
     .header {
-      padding: 8px;
+      padding: 8px 20px;
       display: flex;
       flex-direction: row;
       justify-content: space-between;
@@ -428,13 +163,16 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
 
       min-width: 200px;
       width: 100%;
-      max-width: 770px;
 
-      :deep(.el-select__wrapper) {
+      :deep(.el-select__wrapper), .modelName {
         box-shadow: none;
         //max-width: 200px;
         font-size: 18px;
         font-weight: 500;
+      }
+
+      .modelName {
+        padding-left: 15px;
       }
     }
 
@@ -521,6 +259,18 @@ async function ajaxUpload(option: UploadRequestOptions): Promise<XMLHttpRequest>
           height: 34px;
           margin: 0 0 0 5px;
           border-radius: 10px;
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 770px) {
+    .main {
+      .header {
+        padding: 8px;
+
+        .modelName {
+          padding-left: 5px;
         }
       }
     }

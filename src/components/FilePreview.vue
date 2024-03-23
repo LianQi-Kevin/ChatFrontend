@@ -52,7 +52,7 @@ const previewSrcList = computed(() => {
           </el-icon>
         </el-button>
         <el-progress class="imageCard__progress" :percentage="progress" striped striped-flow :duration="5"
-                     type="circle" width="40" :stroke-width="4" :text-inside="false" :status="status"
+                     type="circle" :width="40" :stroke-width="4" :text-inside="false" :status="status"
                      v-if="!(progress == 100 || !progress)">
           <template />
         </el-progress>
